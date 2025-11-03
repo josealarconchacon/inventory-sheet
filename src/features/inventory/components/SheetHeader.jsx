@@ -32,7 +32,7 @@ const SheetHeader = ({ sheet, onFieldChange, onCreateNew, downloadButton }) => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 self-start">
+        <div className="flex flex-wrap items-center gap-2 self-start">
           <button
             type="button"
             onClick={() => onCreateNew?.()}

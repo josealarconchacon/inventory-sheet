@@ -1,27 +1,28 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { calculateSold, generateSheetId } from '../utils/calculations.js';
+import { calculateSold, generateSheetId } from "../utils/calculations.js";
 
-const STORAGE_PREFIX = 'sheet:';
-const STARTING_CASH = '200';
+const STORAGE_PREFIX = "sheet:";
+const STARTING_CASH = "200";
 
-const getTodayIsoDate = () => new Date().toISOString().split('T')[0];
+const getTodayIsoDate = () => new Date().toISOString().split("T")[0];
 
 const createEmptySheet = () => ({
   id: generateSheetId(),
-  name: '',
-  location: '',
+  createdAt: Date.now(),
+  name: "",
+  location: "",
   date: getTodayIsoDate(),
-  startLobster: '',
-  startBuns: '',
-  startOysters: '',
-  startCaviar: '',
+  startLobster: "",
+  startBuns: "",
+  startOysters: "",
+  startCaviar: "",
   startCash: STARTING_CASH,
-  endLobster: '',
-  endBuns: '',
-  endOysters: '',
-  endCaviar: '',
-  endCash: '',
+  endLobster: "",
+  endBuns: "",
+  endOysters: "",
+  endCaviar: "",
+  endCash: "",
 });
 
 const getComparableDate = (date) => {
@@ -29,8 +30,22 @@ const getComparableDate = (date) => {
   return Number.isNaN(timestamp) ? 0 : timestamp;
 };
 
+const getCreationTime = (sheet) => {
+  if (!sheet) {
+    return 0;
+  }
+
+  if (typeof sheet.createdAt === "number") {
+    return sheet.createdAt;
+  }
+
+  const comparableDate = getComparableDate(sheet.date);
+
+  return comparableDate === 0 ? Date.now() : comparableDate;
+};
+
 const getStorageClient = () => {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return null;
   }
 
@@ -38,7 +53,7 @@ const getStorageClient = () => {
     return window.storage;
   }
 
-  if (typeof window.localStorage !== 'undefined') {
+  if (typeof window.localStorage !== "undefined") {
     return {
       async get(key) {
         const value = window.localStorage.getItem(key);
@@ -90,7 +105,35 @@ export const useInventorySheets = () => {
     try {
       await storage.set(`${STORAGE_PREFIX}${sheet.id}`, JSON.stringify(sheet));
     } catch (storageError) {
-      console.error('Error saving sheet', storageError);
+      console.error("Error saving sheet", storageError);
+    }
+  }, []);
+
+  const removeSheetFromStorage = useCallback(async (sheetId) => {
+    if (!sheetId) {
+      return;
+    }
+
+    const storage = getStorageClient();
+
+    if (!storage) {
+      return;
+    }
+
+    const key = `${STORAGE_PREFIX}${sheetId}`;
+
+    try {
+      if (typeof storage.remove === "function") {
+        await storage.remove(key);
+      } else if (typeof storage.delete === "function") {
+        await storage.delete(key);
+      } else if (typeof storage.set === "function") {
+        await storage.set(key, null);
+      } else if (typeof window?.localStorage !== "undefined") {
+        window.localStorage.removeItem(key);
+      }
+    } catch (storageError) {
+      console.error("Error removing sheet", storageError);
     }
   }, []);
 
@@ -125,21 +168,44 @@ export const useInventorySheets = () => {
             loadedSheets.push(JSON.parse(sheetResult.value));
           }
         } catch (sheetError) {
-          console.warn('Sheet not found:', key, sheetError);
+          console.warn("Sheet not found:", key, sheetError);
         }
       }
 
       if (loadedSheets.length > 0) {
-        loadedSheets.sort((a, b) => getComparableDate(b.date) - getComparableDate(a.date));
-        setSheets(loadedSheets);
+        const normalizedSheets = loadedSheets.map((sheet) =>
+          sheet.createdAt
+            ? sheet
+            : {
+                ...sheet,
+                createdAt: getCreationTime(sheet),
+              }
+        );
+
+        normalizedSheets.sort((a, b) => {
+          const dateDifference =
+            getComparableDate(b.date) - getComparableDate(a.date);
+
+          if (dateDifference !== 0) {
+            return dateDifference;
+          }
+
+          return getCreationTime(b) - getCreationTime(a);
+        });
+
+        setSheets(normalizedSheets);
         setCurrentIndex(0);
         return;
       }
 
       applyFallbackSheet();
     } catch (loadError) {
-      console.error('Failed to load sheets', loadError);
-      setError(loadError instanceof Error ? loadError : new Error('Failed to load sheets'));
+      console.error("Failed to load sheets", loadError);
+      setError(
+        loadError instanceof Error
+          ? loadError
+          : new Error("Failed to load sheets")
+      );
       applyFallbackSheet();
     } finally {
       setIsLoading(false);
@@ -152,8 +218,10 @@ export const useInventorySheets = () => {
 
   const createSheet = useCallback(() => {
     const sheet = createEmptySheet();
-    setSheets((previous) => [sheet, ...previous]);
-    setCurrentIndex(0);
+    setSheets((previous) => {
+      setCurrentIndex(previous.length);
+      return [...previous, sheet];
+    });
     void persistSheet(sheet);
     return sheet;
   }, [persistSheet]);
@@ -167,6 +235,7 @@ export const useInventorySheets = () => {
 
         const updatedSheet = {
           ...previous[currentIndex],
+          createdAt: previous[currentIndex].createdAt ?? Date.now(),
           [field]: value,
         };
 
@@ -178,7 +247,56 @@ export const useInventorySheets = () => {
         return nextSheets;
       });
     },
-    [currentIndex, persistSheet],
+    [currentIndex, persistSheet]
+  );
+
+  const deleteSheet = useCallback(
+    (sheetId) => {
+      let nextIndex = currentIndex;
+      let fallbackSheet = null;
+      let removedSheetId = null;
+
+      setSheets((previous) => {
+        if (!previous.length) {
+          return previous;
+        }
+
+        const targetId = sheetId ?? previous[currentIndex]?.id;
+        const indexToRemove = previous.findIndex(
+          (sheet) => sheet.id === targetId
+        );
+
+        if (indexToRemove === -1) {
+          return previous;
+        }
+
+        removedSheetId = targetId;
+
+        const filtered = previous.filter((sheet) => sheet.id !== targetId);
+
+        if (filtered.length === 0) {
+          fallbackSheet = createEmptySheet();
+          nextIndex = 0;
+          return [fallbackSheet];
+        }
+
+        nextIndex = Math.max(Math.min(indexToRemove, filtered.length - 1), 0);
+        return filtered;
+      });
+
+      if (!removedSheetId) {
+        return;
+      }
+
+      void removeSheetFromStorage(removedSheetId);
+
+      if (fallbackSheet) {
+        void persistSheet(fallbackSheet);
+      }
+
+      setCurrentIndex(nextIndex);
+    },
+    [currentIndex, persistSheet, removeSheetFromStorage]
   );
 
   const goToPrevious = useCallback(() => {
@@ -192,15 +310,24 @@ export const useInventorySheets = () => {
     });
   }, [sheets.length]);
 
-  const currentSheet = useMemo(() => sheets[currentIndex] ?? null, [sheets, currentIndex]);
+  const currentSheet = useMemo(
+    () => sheets[currentIndex] ?? null,
+    [sheets, currentIndex]
+  );
 
   const soldTotals = useMemo(
     () => ({
-      lobster: calculateSold(currentSheet?.startLobster, currentSheet?.endLobster),
+      lobster: calculateSold(
+        currentSheet?.startLobster,
+        currentSheet?.endLobster
+      ),
       buns: calculateSold(currentSheet?.startBuns, currentSheet?.endBuns),
-      oysters: calculateSold(currentSheet?.startOysters, currentSheet?.endOysters),
+      oysters: calculateSold(
+        currentSheet?.startOysters,
+        currentSheet?.endOysters
+      ),
     }),
-    [currentSheet],
+    [currentSheet]
   );
 
   const refresh = useCallback(() => {
@@ -217,9 +344,9 @@ export const useInventorySheets = () => {
     soldTotals,
     createSheet,
     updateSheetField,
+    deleteSheet,
     goToPrevious,
     goToNext,
     refresh,
   };
 };
-

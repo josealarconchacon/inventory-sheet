@@ -9,6 +9,7 @@ import { endOfDayRows, startOfDayRows } from "../constants/tableSections.js";
 
 const InventorySheet = () => {
   const {
+    sheets,
     currentSheet,
     currentIndex,
     totalSheets,
@@ -17,6 +18,7 @@ const InventorySheet = () => {
     soldTotals,
     createSheet,
     updateSheetField,
+    deleteSheet,
     goToPrevious,
     goToNext,
   } = useInventorySheets();
@@ -70,6 +72,8 @@ const InventorySheet = () => {
             total={totalSheets}
             onPrevious={goToPrevious}
             onNext={goToNext}
+            sheets={sheets}
+            onDelete={deleteSheet}
           />
 
           <section className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
