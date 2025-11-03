@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react';
+import { Plus } from "lucide-react";
 
 const SheetHeader = ({ sheet, onFieldChange, onCreateNew }) => {
   if (!sheet) {
@@ -15,27 +15,30 @@ const SheetHeader = ({ sheet, onFieldChange, onCreateNew }) => {
 
   return (
     <div className="text-center mb-6">
-      <h1 className="text-2xl font-bold mb-4">BEGINNING + END OF DAY INVENTORY SHEET</h1>
+      <div className="flex flex-col items-center">Oyster Party</div>
+      <h1 className="text-2xl font-bold mb-4">
+        BEGINNING + END OF DAY INVENTORY SHEET
+      </h1>
       <div className="flex gap-4 justify-center mb-4 items-center">
         <input
           type="text"
           placeholder="Name"
-          value={sheet.name ?? ''}
-          onChange={handleFieldChange('name')}
+          value={sheet.name ?? ""}
+          onChange={handleFieldChange("name")}
           className="border border-gray-300 rounded px-3 py-2 w-48"
         />
         <input
           type="text"
           placeholder="Location"
-          value={sheet.location ?? ''}
-          onChange={handleFieldChange('location')}
+          value={sheet.location ?? ""}
+          onChange={handleFieldChange("location")}
           className="border border-gray-300 rounded px-3 py-2 w-48"
         />
         <div className="flex gap-2 items-center">
           <input
             type="date"
-            value={sheet.date ?? ''}
-            onChange={handleFieldChange('date')}
+            value={sheet.date ?? ""}
+            onChange={handleFieldChange("date")}
             className="border border-gray-300 rounded px-3 py-2 w-48"
           />
           <button
@@ -54,4 +57,3 @@ const SheetHeader = ({ sheet, onFieldChange, onCreateNew }) => {
 };
 
 export default SheetHeader;
-
