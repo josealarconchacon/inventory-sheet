@@ -29,6 +29,46 @@ const getComparableDate = (date) => {
   return Number.isNaN(timestamp) ? 0 : timestamp;
 };
 
+const getStorageClient = () => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  if (window.storage?.get && window.storage?.set && window.storage?.list) {
+    return window.storage;
+  }
+
+  if (typeof window.localStorage !== 'undefined') {
+    return {
+      async get(key) {
+        const value = window.localStorage.getItem(key);
+        return value ? { value } : null;
+      },
+      async set(key, value) {
+        window.localStorage.setItem(key, value);
+      },
+      async remove(key) {
+        window.localStorage.removeItem(key);
+      },
+      async list(prefix) {
+        const keys = [];
+
+        for (let index = 0; index < window.localStorage.length; index += 1) {
+          const key = window.localStorage.key(index);
+
+          if (key?.startsWith(prefix)) {
+            keys.push(key);
+          }
+        }
+
+        return { keys };
+      },
+    };
+  }
+
+  return null;
+};
+
 export const useInventorySheets = () => {
   const [sheets, setSheets] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -41,19 +81,23 @@ export const useInventorySheets = () => {
   }, []);
 
   const persistSheet = useCallback(async (sheet) => {
-    if (typeof window === 'undefined' || !window.storage?.set || !sheet) {
+    const storage = getStorageClient();
+
+    if (!storage?.set || !sheet) {
       return;
     }
 
     try {
-      await window.storage.set(`${STORAGE_PREFIX}${sheet.id}`, JSON.stringify(sheet));
+      await storage.set(`${STORAGE_PREFIX}${sheet.id}`, JSON.stringify(sheet));
     } catch (storageError) {
       console.error('Error saving sheet', storageError);
     }
   }, []);
 
   const loadSheets = useCallback(async () => {
-    if (typeof window === 'undefined' || !window.storage?.list) {
+    const storage = getStorageClient();
+
+    if (!storage?.list) {
       applyFallbackSheet();
       setIsLoading(false);
       return;
@@ -63,7 +107,7 @@ export const useInventorySheets = () => {
     setError(null);
 
     try {
-      const result = await window.storage.list(STORAGE_PREFIX);
+      const result = await storage.list(STORAGE_PREFIX);
       const keys = result?.keys ?? [];
 
       if (keys.length === 0) {
@@ -75,7 +119,7 @@ export const useInventorySheets = () => {
 
       for (const key of keys) {
         try {
-          const sheetResult = await window.storage.get(key);
+          const sheetResult = await storage.get(key);
 
           if (sheetResult?.value) {
             loadedSheets.push(JSON.parse(sheetResult.value));
