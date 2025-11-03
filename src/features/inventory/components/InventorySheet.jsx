@@ -22,58 +22,79 @@ const InventorySheet = () => {
   } = useInventorySheets();
 
   if (isLoading) {
-    return <div className="max-w-4xl mx-auto p-6">Loading...</div>;
+    return (
+      <div className="min-h-screen bg-slate-100">
+        <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+          <div className="rounded-3xl border border-slate-200 bg-white/80 p-8 text-center text-slate-600 shadow-sm backdrop-blur">
+            Loading your inventory sheet…
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!currentSheet) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        No inventory sheets available.
+      <div className="min-h-screen bg-slate-100">
+        <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+          <div className="rounded-3xl border border-slate-200 bg-white/80 p-8 text-center text-slate-600 shadow-sm backdrop-blur">
+            No inventory sheets available.
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white">
-      <SheetHeader
-        sheet={currentSheet}
-        onFieldChange={updateSheetField}
-        onCreateNew={createSheet}
-      />
+    <div className="relative min-h-screen bg-slate-100">
+      <div className="mx-auto w-full max-w-5xl px-4 pb-12 pt-4 sm:px-6 lg:px-8">
+        <div className="space-y-4">
+          <SheetHeader
+            sheet={currentSheet}
+            onFieldChange={updateSheetField}
+            onCreateNew={createSheet}
+            downloadButton={
+              <DownloadButton sheet={currentSheet} totals={soldTotals} />
+            }
+          />
 
-      {error && (
-        <div className="mb-4 text-center text-sm text-red-600">
-          There was a problem loading your saved sheets. A new sheet has been
-          created.
+          {error && (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm font-medium text-amber-700 shadow-sm">
+              There was a problem loading your saved sheets. A new sheet has
+              been created.
+            </div>
+          )}
+
+          <SheetNavigation
+            currentIndex={currentIndex}
+            total={totalSheets}
+            onPrevious={goToPrevious}
+            onNext={goToNext}
+          />
+
+          <section className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
+            <InventoryTableSection
+              title="At the start of the day"
+              rows={startOfDayRows}
+              sheet={currentSheet}
+              totalsHeading="Totals"
+              onFieldChange={updateSheetField}
+              className="h-full"
+            />
+
+            <InventoryTableSection
+              title="At the end of the day"
+              rows={endOfDayRows}
+              sheet={currentSheet}
+              totalsHeading="Totals"
+              onFieldChange={updateSheetField}
+              className="h-full"
+            />
+          </section>
+
+          <ProductTotalsSection totals={soldTotals} />
         </div>
-      )}
-
-      <SheetNavigation
-        currentIndex={currentIndex}
-        total={totalSheets}
-        onPrevious={goToPrevious}
-        onNext={goToNext}
-      />
-
-      <InventoryTableSection
-        title="AT THE START OF THE DAY:"
-        rows={startOfDayRows}
-        sheet={currentSheet}
-        totalsHeading="TOTALS:"
-        onFieldChange={updateSheetField}
-      />
-
-      <InventoryTableSection
-        title="AT THE END OF THE DAY:"
-        rows={endOfDayRows}
-        sheet={currentSheet}
-        totalsHeading=""
-        onFieldChange={updateSheetField}
-      />
-
-      <ProductTotalsSection totals={soldTotals} />
-
-      <DownloadButton sheet={currentSheet} totals={soldTotals} />
+      </div>
     </div>
   );
 };
