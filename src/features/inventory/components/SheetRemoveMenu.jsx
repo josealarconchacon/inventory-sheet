@@ -28,7 +28,10 @@ const describeSheet = (sheet, index) => {
 };
 
 const SheetRemoveMenu = ({ sheets, currentSheetId, onRemove }) => {
-  const safeSheets = Array.isArray(sheets) ? sheets : [];
+  const safeSheets = useMemo(
+    () => (Array.isArray(sheets) ? sheets : []),
+    [sheets]
+  );
   const isDisabled = safeSheets.length <= 1;
 
   const options = useMemo(
