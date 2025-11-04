@@ -1,124 +1,168 @@
-import { formatSoldValue } from './calculations.js';
+import { calculateSold, formatSoldValue } from "./calculations.js";
+import { endOfDayRows, startOfDayRows } from "../constants/tableSections.js";
 
-const generateSheetHtml = (sheet, totals) => {
-  const safeSheet = sheet ?? {};
-  const safeTotals = totals ?? {};
+const sanitizeFilenamePart = (value) => {
+  if (!value) {
+    return "";
+  }
 
-  return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8" />
-        <title>Inventory Sheet - ${safeSheet.date ?? ''}</title>
-        <style>
-          body { font-family: Arial, sans-serif; padding: 40px; }
-          h1 { text-align: center; margin-bottom: 30px; font-size: 18px; }
-          .header { text-align: center; margin-bottom: 20px; }
-          table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-          th, td { border: 1px solid #000; padding: 10px; text-align: left; }
-          th { background-color: #f0f0f0; font-weight: bold; }
-          .section-header { background-color: #e0e0e0; font-weight: bold; text-align: center; }
-          .totals-col { text-align: right; font-weight: bold; }
-          .highlight { background-color: #f5f8ff; }
-          @media print {
-            button { display: none; }
-          }
-        </style>
-      </head>
-      <body>
-        <h1>BEGINNING + END OF DAY INVENTORY SHEET</h1>
-        <div class="header">
-          <strong>NAME:</strong> ${safeSheet.name ?? ''}<br>
-          <strong>LOCATION + DATE:</strong> ${safeSheet.location ?? ''} - ${safeSheet.date ?? ''}
-        </div>
-        <table>
-          <tr>
-            <th colspan="2" class="section-header">AT THE START OF THE DAY:</th>
-            <th class="totals-col">TOTALS:</th>
-          </tr>
-          <tr>
-            <td colspan="2">Total amount of Lobster brought</td>
-            <td class="totals-col">${safeSheet.startLobster ?? ''}</td>
-          </tr>
-          <tr>
-            <td colspan="2">Total amount of Buns brought</td>
-            <td class="totals-col">${safeSheet.startBuns ?? ''}</td>
-          </tr>
-          <tr>
-            <td colspan="2">Total number of Oysters brought</td>
-            <td class="totals-col">${safeSheet.startOysters ?? ''}</td>
-          </tr>
-          <tr>
-            <td colspan="2">Total amount of Caviar brought</td>
-            <td class="totals-col">${safeSheet.startCaviar ?? ''}</td>
-          </tr>
-          <tr>
-            <td colspan="2">Total starting Cash (should be $200)</td>
-            <td class="totals-col">$${safeSheet.startCash ?? ''}</td>
-          </tr>
-          <tr>
-            <th colspan="2" class="section-header">AT THE END OF THE DAY:</th>
-            <th></th>
-          </tr>
-          <tr>
-            <td colspan="2">Total amount of Lobster leftover</td>
-            <td class="totals-col">${safeSheet.endLobster ?? ''}</td>
-          </tr>
-          <tr>
-            <td colspan="2">Total number of Buns leftover</td>
-            <td class="totals-col">${safeSheet.endBuns ?? ''}</td>
-          </tr>
-          <tr>
-            <td colspan="2">Total number of Oysters leftover</td>
-            <td class="totals-col">${safeSheet.endOysters ?? ''}</td>
-          </tr>
-          <tr>
-            <td colspan="2">Total amount of Caviar leftover</td>
-            <td class="totals-col">${safeSheet.endCaviar ?? ''}</td>
-          </tr>
-          <tr>
-            <td colspan="2">Total Cash (including starting cash)</td>
-            <td class="totals-col">$${safeSheet.endCash ?? ''}</td>
-          </tr>
-          <tr>
-            <th colspan="2" class="section-header">PRODUCT TOTALS:</th>
-            <th></th>
-          </tr>
-          <tr class="highlight">
-            <td colspan="2">Total Lobster sold (amount brought minus leftover)</td>
-            <td class="totals-col">${formatSoldValue(safeTotals.lobster)}</td>
-          </tr>
-          <tr class="highlight">
-            <td colspan="2">Total Rolls sold (amount brought minus leftover)</td>
-            <td class="totals-col">${formatSoldValue(safeTotals.buns)}</td>
-          </tr>
-          <tr class="highlight">
-            <td colspan="2">Total Oysters sold (amount brought minus leftover)</td>
-            <td class="totals-col">${formatSoldValue(safeTotals.oysters)}</td>
-          </tr>
-        </table>
-      </body>
-      </html>
-    `;
+  return String(value)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 };
 
-export const downloadSheetPdf = (sheet, totals) => {
-  if (typeof window === 'undefined') {
+const formatCellValue = (value, prefix) => {
+  if (value === undefined || value === null) {
+    return "—";
+  }
+
+  const stringValue = String(value).trim();
+
+  if (stringValue === "") {
+    return "—";
+  }
+
+  return prefix ? `${prefix}${stringValue}` : stringValue;
+};
+
+const buildSectionRows = (rows, sheet) =>
+  rows.map((row) => [row.label, formatCellValue(sheet?.[row.key], row.prefix)]);
+
+const buildTotalsRows = (sheet) => [
+  [
+    "Total Lobster sold (amount brought minus leftover)",
+    formatSoldValue(calculateSold(sheet?.startLobster, sheet?.endLobster)),
+  ],
+  [
+    "Total Rolls sold (amount brought minus leftover)",
+    formatSoldValue(calculateSold(sheet?.startBuns, sheet?.endBuns)),
+  ],
+  [
+    "Total Oysters sold (amount brought minus leftover)",
+    formatSoldValue(calculateSold(sheet?.startOysters, sheet?.endOysters)),
+  ],
+];
+
+const getSheetFilename = (sheet) => {
+  const parts = [sheet?.date, sheet?.location, sheet?.name]
+    .map(sanitizeFilenamePart)
+    .filter(Boolean);
+
+  if (parts.length > 0) {
+    return parts.join("-");
+  }
+
+  if (sheet?.id) {
+    return sanitizeFilenamePart(sheet.id);
+  }
+
+  return "export";
+};
+
+const createFilename = (sheets) => {
+  if (sheets.length === 1) {
+    return `inventory-sheet-${getSheetFilename(sheets[0])}.pdf`;
+  }
+
+  return `inventory-sheets-${new Date().toISOString().slice(0, 10)}.pdf`;
+};
+
+export const downloadSheetsPdf = async (sheets) => {
+  const safeSheets = Array.isArray(sheets)
+    ? sheets.filter((sheet) => sheet && typeof sheet === "object")
+    : [];
+
+  if (safeSheets.length === 0) {
     return;
   }
 
-  const printWindow = window.open('', '_blank', 'noopener,noreferrer');
+  const [jsPdfModule, autoTableModule] = await Promise.all([
+    import("jspdf"),
+    import("jspdf-autotable"),
+  ]);
 
-  if (!printWindow) {
-    console.error('Unable to open print window for PDF export');
-    return;
+  const JsPdfConstructor = jsPdfModule.jsPDF ?? jsPdfModule.default;
+  const autoTable =
+    autoTableModule.default ?? autoTableModule.autoTable ?? autoTableModule.jsPDF;
+
+  if (typeof JsPdfConstructor !== "function" || typeof autoTable !== "function") {
+    throw new Error("PDF export libraries failed to load");
   }
 
-  printWindow.document.write(generateSheetHtml(sheet, totals));
-  printWindow.document.close();
+  const doc = new JsPdfConstructor({
+    orientation: "portrait",
+    unit: "pt",
+    format: "letter",
+  });
 
-  setTimeout(() => {
-    printWindow.print();
-  }, 250);
+  safeSheets.forEach((sheet, index) => {
+    if (index > 0) {
+      doc.addPage();
+    }
+
+    const marginX = 42;
+    const headerY = 56;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(15);
+    doc.text("BEGINNING + END OF DAY INVENTORY SHEET", marginX, headerY);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    doc.text(`NAME: ${sheet?.name ?? ""}`, marginX, headerY + 22);
+
+    const locationParts = [sheet?.location, sheet?.date]
+      .filter(Boolean)
+      .map((part) => String(part).trim());
+    doc.text(
+      `LOCATION + DATE: ${locationParts.join(" • ")}`,
+      marginX,
+      headerY + 38
+    );
+
+    const tableMargin = { left: marginX, right: marginX };
+    let currentY = headerY + 54;
+
+    autoTable(doc, {
+      head: [["At the start of the day", "Totals"]],
+      body: buildSectionRows(startOfDayRows, sheet),
+      startY: currentY,
+      theme: "grid",
+      margin: tableMargin,
+      styles: { fontSize: 10, cellPadding: 6 },
+      headStyles: { fillColor: [219, 234, 254], textColor: 32, fontStyle: "bold" },
+      columnStyles: { 1: { halign: "right" } },
+    });
+
+    currentY = doc.lastAutoTable?.finalY ? doc.lastAutoTable.finalY + 18 : currentY;
+
+    autoTable(doc, {
+      head: [["At the end of the day", "Totals"]],
+      body: buildSectionRows(endOfDayRows, sheet),
+      startY: currentY,
+      theme: "grid",
+      margin: tableMargin,
+      styles: { fontSize: 10, cellPadding: 6 },
+      headStyles: { fillColor: [226, 232, 240], textColor: 32, fontStyle: "bold" },
+      columnStyles: { 1: { halign: "right" } },
+    });
+
+    currentY = doc.lastAutoTable?.finalY ? doc.lastAutoTable.finalY + 18 : currentY;
+
+    autoTable(doc, {
+      head: [["Product totals", ""]],
+      body: buildTotalsRows(sheet),
+      startY: currentY,
+      theme: "grid",
+      margin: tableMargin,
+      styles: { fontSize: 10, cellPadding: 6 },
+      headStyles: { fillColor: [191, 219, 254], textColor: 25, fontStyle: "bold" },
+      columnStyles: { 1: { halign: "right" } },
+    });
+  });
+
+  doc.save(createFilename(safeSheets));
 };
 
