@@ -56,7 +56,10 @@ const InventorySheet = () => {
             onFieldChange={updateSheetField}
             onCreateNew={createSheet}
             downloadButton={
-              <DownloadButton sheet={currentSheet} totals={soldTotals} />
+              <DownloadButton
+                sheets={sheets}
+                currentSheetId={currentSheet?.id ?? null}
+              />
             }
           />
 
