@@ -22,3 +22,18 @@ export const endOfDayRows = [
     placeholder: "$",
   },
 ];
+
+export const productTotalsRows = [
+  {
+    key: "lobster",
+    label: "Total Lobster sold (amount brought minus leftover)",
+  },
+  {
+    key: "buns",
+    label: "Total Rolls sold (amount brought minus leftover)",
+  },
+  {
+    key: "oysters",
+    label: "Total Oysters sold (amount brought minus leftover)",
+  },
+];

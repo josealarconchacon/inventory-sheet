@@ -1,22 +1,8 @@
-import { formatSoldValue } from '../utils/calculations.js';
+import { formatSoldValue } from "../utils/calculations.js";
+import { productTotalsRows } from "../constants/tableSections.js";
 
 const ProductTotalsSection = ({ totals }) => {
   const safeTotals = totals ?? {};
-
-  const rows = [
-    {
-      key: 'lobster',
-      label: 'Total Lobster sold (amount brought minus leftover)',
-    },
-    {
-      key: 'buns',
-      label: 'Total Rolls sold (amount brought minus leftover)',
-    },
-    {
-      key: 'oysters',
-      label: 'Total Oysters sold (amount brought minus leftover)',
-    },
-  ];
 
   return (
     <section className="rounded-3xl border border-slate-200 bg-gradient-to-br from-white/95 via-white/90 to-slate-50/90 shadow-sm backdrop-blur">
@@ -33,7 +19,7 @@ const ProductTotalsSection = ({ totals }) => {
       </header>
 
       <div className="grid gap-3 px-4 py-4 sm:grid-cols-3">
-        {rows.map(({ key, label }) => (
+        {productTotalsRows.map(({ key, label }) => (
           <article
             key={key}
             className="flex flex-col gap-2 rounded-2xl border border-transparent bg-white/80 px-4 py-3 shadow-inner shadow-blue-50 transition hover:border-blue-200 hover:shadow-lg"

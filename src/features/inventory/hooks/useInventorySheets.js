@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { calculateSold, generateSheetId } from "../utils/calculations.js";
+import { calculateSoldTotals, generateSheetId } from "../utils/calculations.js";
+import { isSheetComplete } from "../utils/sheetUtils.js";
 
-const STORAGE_PREFIX = "sheet:";
+const STORAGE_KEY = "sheet:current";
 const STARTING_CASH = "200";
 
 const getTodayIsoDate = () => new Date().toISOString().split("T")[0];
@@ -25,23 +26,23 @@ const createEmptySheet = () => ({
   endCash: "",
 });
 
-const getComparableDate = (date) => {
-  const timestamp = Date.parse(date);
-  return Number.isNaN(timestamp) ? 0 : timestamp;
-};
-
-const getCreationTime = (sheet) => {
-  if (!sheet) {
-    return 0;
+const sanitizeSheet = (sheet) => {
+  if (!sheet || typeof sheet !== "object") {
+    return createEmptySheet();
   }
 
-  if (typeof sheet.createdAt === "number") {
-    return sheet.createdAt;
-  }
+  const fallback = createEmptySheet();
 
-  const comparableDate = getComparableDate(sheet.date);
-
-  return comparableDate === 0 ? Date.now() : comparableDate;
+  return {
+    ...fallback,
+    ...sheet,
+    id: sheet.id ?? fallback.id,
+    createdAt:
+      typeof sheet.createdAt === "number"
+        ? sheet.createdAt
+        : fallback.createdAt,
+    date: sheet.date ?? fallback.date,
+  };
 };
 
 const getStorageClient = () => {
@@ -49,7 +50,7 @@ const getStorageClient = () => {
     return null;
   }
 
-  if (window.storage?.get && window.storage?.set && window.storage?.list) {
+  if (window.storage?.get && window.storage?.set) {
     return window.storage;
   }
 
@@ -60,23 +61,15 @@ const getStorageClient = () => {
         return value ? { value } : null;
       },
       async set(key, value) {
+        if (value === null || value === undefined) {
+          window.localStorage.removeItem(key);
+          return;
+        }
+
         window.localStorage.setItem(key, value);
       },
       async remove(key) {
         window.localStorage.removeItem(key);
-      },
-      async list(prefix) {
-        const keys = [];
-
-        for (let index = 0; index < window.localStorage.length; index += 1) {
-          const key = window.localStorage.key(index);
-
-          if (key?.startsWith(prefix)) {
-            keys.push(key);
-          }
-        }
-
-        return { keys };
       },
     };
   }
@@ -85,63 +78,36 @@ const getStorageClient = () => {
 };
 
 export const useInventorySheets = () => {
-  const [sheets, setSheets] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [sheet, setSheet] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const applyFallbackSheet = useCallback(() => {
-    setSheets([createEmptySheet()]);
-    setCurrentIndex(0);
+    const fallback = createEmptySheet();
+    setSheet(fallback);
+    return fallback;
   }, []);
 
-  const persistSheet = useCallback(async (sheet) => {
+  const persistSheet = useCallback(async (nextSheet) => {
     const storage = getStorageClient();
 
-    if (!storage?.set || !sheet) {
+    if (!storage?.set || !nextSheet) {
       return;
     }
 
     try {
-      await storage.set(`${STORAGE_PREFIX}${sheet.id}`, JSON.stringify(sheet));
+      await storage.set(STORAGE_KEY, JSON.stringify(nextSheet));
     } catch (storageError) {
       console.error("Error saving sheet", storageError);
     }
   }, []);
 
-  const removeSheetFromStorage = useCallback(async (sheetId) => {
-    if (!sheetId) {
-      return;
-    }
-
+  const loadSheet = useCallback(async () => {
     const storage = getStorageClient();
 
-    if (!storage) {
-      return;
-    }
-
-    const key = `${STORAGE_PREFIX}${sheetId}`;
-
-    try {
-      if (typeof storage.remove === "function") {
-        await storage.remove(key);
-      } else if (typeof storage.delete === "function") {
-        await storage.delete(key);
-      } else if (typeof storage.set === "function") {
-        await storage.set(key, null);
-      } else if (typeof window?.localStorage !== "undefined") {
-        window.localStorage.removeItem(key);
-      }
-    } catch (storageError) {
-      console.error("Error removing sheet", storageError);
-    }
-  }, []);
-
-  const loadSheets = useCallback(async () => {
-    const storage = getStorageClient();
-
-    if (!storage?.list) {
-      applyFallbackSheet();
+    if (!storage?.get) {
+      const fallback = applyFallbackSheet();
+      void persistSheet(fallback);
       setIsLoading(false);
       return;
     }
@@ -150,203 +116,70 @@ export const useInventorySheets = () => {
     setError(null);
 
     try {
-      const result = await storage.list(STORAGE_PREFIX);
-      const keys = result?.keys ?? [];
+      const stored = await storage.get(STORAGE_KEY);
 
-      if (keys.length === 0) {
-        applyFallbackSheet();
+      if (stored?.value) {
+        const parsed = JSON.parse(stored.value);
+        const normalized = sanitizeSheet(parsed);
+        setSheet(normalized);
+        void persistSheet(normalized);
         return;
       }
 
-      const loadedSheets = [];
-
-      for (const key of keys) {
-        try {
-          const sheetResult = await storage.get(key);
-
-          if (sheetResult?.value) {
-            loadedSheets.push(JSON.parse(sheetResult.value));
-          }
-        } catch (sheetError) {
-          console.warn("Sheet not found:", key, sheetError);
-        }
-      }
-
-      if (loadedSheets.length > 0) {
-        const normalizedSheets = loadedSheets.map((sheet) =>
-          sheet.createdAt
-            ? sheet
-            : {
-                ...sheet,
-                createdAt: getCreationTime(sheet),
-              }
-        );
-
-        normalizedSheets.sort((a, b) => {
-          const dateDifference =
-            getComparableDate(b.date) - getComparableDate(a.date);
-
-          if (dateDifference !== 0) {
-            return dateDifference;
-          }
-
-          return getCreationTime(b) - getCreationTime(a);
-        });
-
-        setSheets(normalizedSheets);
-        setCurrentIndex(0);
-        return;
-      }
-
-      applyFallbackSheet();
+      const fallback = applyFallbackSheet();
+      void persistSheet(fallback);
     } catch (loadError) {
-      console.error("Failed to load sheets", loadError);
+      console.error("Failed to load sheet", loadError);
       setError(
         loadError instanceof Error
           ? loadError
-          : new Error("Failed to load sheets")
+          : new Error("Failed to load sheet")
       );
-      applyFallbackSheet();
+      const fallback = applyFallbackSheet();
+      void persistSheet(fallback);
     } finally {
       setIsLoading(false);
     }
-  }, [applyFallbackSheet]);
+  }, [applyFallbackSheet, persistSheet]);
 
   useEffect(() => {
-    loadSheets();
-  }, [loadSheets]);
-
-  const createSheet = useCallback(() => {
-    const sheet = createEmptySheet();
-    setSheets((previous) => {
-      setCurrentIndex(previous.length);
-      return [...previous, sheet];
-    });
-    void persistSheet(sheet);
-    return sheet;
-  }, [persistSheet]);
+    void loadSheet();
+  }, [loadSheet]);
 
   const updateSheetField = useCallback(
     (field, value) => {
-      setSheets((previous) => {
-        if (!previous[currentIndex]) {
-          return previous;
-        }
-
-        const updatedSheet = {
-          ...previous[currentIndex],
-          createdAt: previous[currentIndex].createdAt ?? Date.now(),
+      setSheet((previous) => {
+        const safeSheet = sanitizeSheet(previous);
+        const nextSheet = {
+          ...safeSheet,
           [field]: value,
         };
 
-        const nextSheets = [...previous];
-        nextSheets[currentIndex] = updatedSheet;
+        void persistSheet(nextSheet);
 
-        void persistSheet(updatedSheet);
-
-        return nextSheets;
+        return nextSheet;
       });
     },
-    [currentIndex, persistSheet]
+    [persistSheet]
   );
 
-  const deleteSheet = useCallback(
-    (sheetId) => {
-      let nextIndex = currentIndex;
-      let fallbackSheet = null;
-      let removedSheetId = null;
+  const resetSheet = useCallback(() => {
+    const fresh = createEmptySheet();
+    setSheet(fresh);
+    void persistSheet(fresh);
+  }, [persistSheet]);
 
-      setSheets((previous) => {
-        if (!previous.length) {
-          return previous;
-        }
+  const soldTotals = useMemo(() => calculateSoldTotals(sheet), [sheet]);
 
-        const targetId = sheetId ?? previous[currentIndex]?.id;
-        const indexToRemove = previous.findIndex(
-          (sheet) => sheet.id === targetId
-        );
-
-        if (indexToRemove === -1) {
-          return previous;
-        }
-
-        removedSheetId = targetId;
-
-        const filtered = previous.filter((sheet) => sheet.id !== targetId);
-
-        if (filtered.length === 0) {
-          fallbackSheet = createEmptySheet();
-          nextIndex = 0;
-          return [fallbackSheet];
-        }
-
-        nextIndex = Math.max(Math.min(indexToRemove, filtered.length - 1), 0);
-        return filtered;
-      });
-
-      if (!removedSheetId) {
-        return;
-      }
-
-      void removeSheetFromStorage(removedSheetId);
-
-      if (fallbackSheet) {
-        void persistSheet(fallbackSheet);
-      }
-
-      setCurrentIndex(nextIndex);
-    },
-    [currentIndex, persistSheet, removeSheetFromStorage]
-  );
-
-  const goToPrevious = useCallback(() => {
-    setCurrentIndex((index) => Math.max(index - 1, 0));
-  }, []);
-
-  const goToNext = useCallback(() => {
-    setCurrentIndex((index) => {
-      const lastIndex = Math.max(sheets.length - 1, 0);
-      return Math.min(index + 1, lastIndex);
-    });
-  }, [sheets.length]);
-
-  const currentSheet = useMemo(
-    () => sheets[currentIndex] ?? null,
-    [sheets, currentIndex]
-  );
-
-  const soldTotals = useMemo(
-    () => ({
-      lobster: calculateSold(
-        currentSheet?.startLobster,
-        currentSheet?.endLobster
-      ),
-      buns: calculateSold(currentSheet?.startBuns, currentSheet?.endBuns),
-      oysters: calculateSold(
-        currentSheet?.startOysters,
-        currentSheet?.endOysters
-      ),
-    }),
-    [currentSheet]
-  );
-
-  const refresh = useCallback(() => {
-    void loadSheets();
-  }, [loadSheets]);
+  const isComplete = useMemo(() => isSheetComplete(sheet), [sheet]);
 
   return {
-    sheets,
-    currentSheet,
-    currentIndex,
-    totalSheets: sheets.length,
+    sheet,
     isLoading,
     error,
     soldTotals,
-    createSheet,
     updateSheetField,
-    deleteSheet,
-    goToPrevious,
-    goToNext,
-    refresh,
+    resetSheet,
+    isComplete,
   };
 };

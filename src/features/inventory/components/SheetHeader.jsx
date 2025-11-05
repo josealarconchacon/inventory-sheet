@@ -1,9 +1,7 @@
-import { Plus } from "lucide-react";
-
 const baseInputClasses =
   "h-11 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-base font-medium text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100";
 
-const SheetHeader = ({ sheet, onFieldChange, onCreateNew, downloadButton }) => {
+const SheetHeader = ({ sheet, onFieldChange, downloadButton }) => {
   if (!sheet) {
     return null;
   }
@@ -33,15 +31,6 @@ const SheetHeader = ({ sheet, onFieldChange, onCreateNew, downloadButton }) => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 self-start">
-          <button
-            type="button"
-            onClick={() => onCreateNew?.()}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-5 text-sm font-semibold text-blue-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
-          >
-            <Plus className="h-4 w-4" />
-            New sheet
-          </button>
-
           {downloadButton}
         </div>
       </div>

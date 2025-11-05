@@ -1,5 +1,9 @@
-import { calculateSold, formatSoldValue } from "./calculations.js";
-import { endOfDayRows, startOfDayRows } from "../constants/tableSections.js";
+import { calculateSoldTotals, formatSoldValue } from "./calculations.js";
+import {
+  endOfDayRows,
+  startOfDayRows,
+  productTotalsRows,
+} from "../constants/tableSections.js";
 
 const sanitizeFilenamePart = (value) => {
   if (!value) {
@@ -30,20 +34,11 @@ const formatCellValue = (value, prefix) => {
 const buildSectionRows = (rows, sheet) =>
   rows.map((row) => [row.label, formatCellValue(sheet?.[row.key], row.prefix)]);
 
-const buildTotalsRows = (sheet) => [
-  [
-    "Total Lobster sold (amount brought minus leftover)",
-    formatSoldValue(calculateSold(sheet?.startLobster, sheet?.endLobster)),
-  ],
-  [
-    "Total Rolls sold (amount brought minus leftover)",
-    formatSoldValue(calculateSold(sheet?.startBuns, sheet?.endBuns)),
-  ],
-  [
-    "Total Oysters sold (amount brought minus leftover)",
-    formatSoldValue(calculateSold(sheet?.startOysters, sheet?.endOysters)),
-  ],
-];
+const buildTotalsRows = (totals) =>
+  productTotalsRows.map(({ key, label }) => [
+    label,
+    formatSoldValue(totals?.[key]),
+  ]);
 
 const getSheetFilename = (sheet) => {
   const parts = [sheet?.date, sheet?.location, sheet?.name]
@@ -61,20 +56,13 @@ const getSheetFilename = (sheet) => {
   return "export";
 };
 
-const createFilename = (sheets) => {
-  if (sheets.length === 1) {
-    return `inventory-sheet-${getSheetFilename(sheets[0])}.pdf`;
-  }
+const createFilename = (sheet) =>
+  `inventory-sheet-${getSheetFilename(sheet)}.pdf`;
 
-  return `inventory-sheets-${new Date().toISOString().slice(0, 10)}.pdf`;
-};
+export const downloadSheetPdf = async (sheet) => {
+  const safeSheet = sheet && typeof sheet === "object" ? sheet : null;
 
-export const downloadSheetsPdf = async (sheets) => {
-  const safeSheets = Array.isArray(sheets)
-    ? sheets.filter((sheet) => sheet && typeof sheet === "object")
-    : [];
-
-  if (safeSheets.length === 0) {
+  if (!safeSheet) {
     return;
   }
 
@@ -97,72 +85,67 @@ export const downloadSheetsPdf = async (sheets) => {
     format: "letter",
   });
 
-  safeSheets.forEach((sheet, index) => {
-    if (index > 0) {
-      doc.addPage();
-    }
+  const marginX = 42;
+  const headerY = 56;
+  const tableMargin = { left: marginX, right: marginX };
+  const soldTotals = calculateSoldTotals(safeSheet);
 
-    const marginX = 42;
-    const headerY = 56;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(15);
+  doc.text("BEGINNING + END OF DAY INVENTORY SHEET", marginX, headerY);
 
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(15);
-    doc.text("BEGINNING + END OF DAY INVENTORY SHEET", marginX, headerY);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+  doc.text(`NAME: ${safeSheet?.name ?? ""}`, marginX, headerY + 22);
 
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(11);
-    doc.text(`NAME: ${sheet?.name ?? ""}`, marginX, headerY + 22);
+  const locationParts = [safeSheet?.location, safeSheet?.date]
+    .filter(Boolean)
+    .map((part) => String(part).trim());
+  doc.text(
+    `LOCATION + DATE: ${locationParts.join(" • ")}`,
+    marginX,
+    headerY + 38
+  );
 
-    const locationParts = [sheet?.location, sheet?.date]
-      .filter(Boolean)
-      .map((part) => String(part).trim());
-    doc.text(
-      `LOCATION + DATE: ${locationParts.join(" • ")}`,
-      marginX,
-      headerY + 38
-    );
+  let currentY = headerY + 54;
 
-    const tableMargin = { left: marginX, right: marginX };
-    let currentY = headerY + 54;
-
-    autoTable(doc, {
-      head: [["At the start of the day", "Totals"]],
-      body: buildSectionRows(startOfDayRows, sheet),
-      startY: currentY,
-      theme: "grid",
-      margin: tableMargin,
-      styles: { fontSize: 10, cellPadding: 6 },
-      headStyles: { fillColor: [219, 234, 254], textColor: 32, fontStyle: "bold" },
-      columnStyles: { 1: { halign: "right" } },
-    });
-
-    currentY = doc.lastAutoTable?.finalY ? doc.lastAutoTable.finalY + 18 : currentY;
-
-    autoTable(doc, {
-      head: [["At the end of the day", "Totals"]],
-      body: buildSectionRows(endOfDayRows, sheet),
-      startY: currentY,
-      theme: "grid",
-      margin: tableMargin,
-      styles: { fontSize: 10, cellPadding: 6 },
-      headStyles: { fillColor: [226, 232, 240], textColor: 32, fontStyle: "bold" },
-      columnStyles: { 1: { halign: "right" } },
-    });
-
-    currentY = doc.lastAutoTable?.finalY ? doc.lastAutoTable.finalY + 18 : currentY;
-
-    autoTable(doc, {
-      head: [["Product totals", ""]],
-      body: buildTotalsRows(sheet),
-      startY: currentY,
-      theme: "grid",
-      margin: tableMargin,
-      styles: { fontSize: 10, cellPadding: 6 },
-      headStyles: { fillColor: [191, 219, 254], textColor: 25, fontStyle: "bold" },
-      columnStyles: { 1: { halign: "right" } },
-    });
+  autoTable(doc, {
+    head: [["At the start of the day", "Totals"]],
+    body: buildSectionRows(startOfDayRows, safeSheet),
+    startY: currentY,
+    theme: "grid",
+    margin: tableMargin,
+    styles: { fontSize: 10, cellPadding: 6 },
+    headStyles: { fillColor: [219, 234, 254], textColor: 32, fontStyle: "bold" },
+    columnStyles: { 1: { halign: "right" } },
   });
 
-  doc.save(createFilename(safeSheets));
+  currentY = doc.lastAutoTable?.finalY ? doc.lastAutoTable.finalY + 18 : currentY;
+
+  autoTable(doc, {
+    head: [["At the end of the day", "Totals"]],
+    body: buildSectionRows(endOfDayRows, safeSheet),
+    startY: currentY,
+    theme: "grid",
+    margin: tableMargin,
+    styles: { fontSize: 10, cellPadding: 6 },
+    headStyles: { fillColor: [226, 232, 240], textColor: 32, fontStyle: "bold" },
+    columnStyles: { 1: { halign: "right" } },
+  });
+
+  currentY = doc.lastAutoTable?.finalY ? doc.lastAutoTable.finalY + 18 : currentY;
+
+  autoTable(doc, {
+    head: [["Product totals", ""]],
+    body: buildTotalsRows(soldTotals),
+    startY: currentY,
+    theme: "grid",
+    margin: tableMargin,
+    styles: { fontSize: 10, cellPadding: 6 },
+    headStyles: { fillColor: [191, 219, 254], textColor: 25, fontStyle: "bold" },
+    columnStyles: { 1: { halign: "right" } },
+  });
+
+  doc.save(createFilename(safeSheet));
 };
 
