@@ -4,7 +4,12 @@ import { Download, Loader2 } from "lucide-react";
 import { isSheetComplete } from "../utils/sheetUtils.js";
 import { downloadSheetPdf } from "../utils/pdf.js";
 
-const DownloadButton = ({ sheet, isComplete, onDownloadComplete }) => {
+const DownloadButton = ({
+  sheet,
+  isComplete,
+  onDownloadComplete,
+  className = "",
+}) => {
   const [isDownloading, setIsDownloading] = useState(false);
 
   const resolvedSheet = useMemo(() => sheet ?? null, [sheet]);
@@ -45,14 +50,17 @@ const DownloadButton = ({ sheet, isComplete, onDownloadComplete }) => {
       onClick={handleDownload}
       disabled={isDisabled}
       title={disabledReason}
-      className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-blue-600 px-5 text-sm font-semibold text-white shadow-sm shadow-blue-600/30 transition hover:bg-blue-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none"
+      aria-busy={isDownloading}
+      aria-live="polite"
+      data-busy={isDownloading}
+      className={`inventory-download-button ${className}`.trim()}
     >
       {isDownloading ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
+        <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
       ) : (
-        <Download className="h-4 w-4" />
+        <Download className="h-4 w-4 shrink-0" />
       )}
-      Download PDF
+      <span className="font-semibold">Download PDF</span>
     </button>
   );
 };
