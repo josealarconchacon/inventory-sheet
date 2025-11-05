@@ -18,9 +18,9 @@ const InventorySheet = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-100">
-        <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
-          <div className="rounded-3xl border border-slate-200 bg-white/80 p-8 text-center text-slate-600 shadow-sm backdrop-blur">
+      <div className="inventory-app-shell">
+        <div className="inventory-app-surface">
+          <div className="inventory-card inventory-motion-fade px-6 py-12 text-center text-base font-semibold text-slate-100">
             Loading your inventory sheet…
           </div>
         </div>
@@ -30,9 +30,9 @@ const InventorySheet = () => {
 
   if (!sheet) {
     return (
-      <div className="min-h-screen bg-slate-100">
-        <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
-          <div className="rounded-3xl border border-slate-200 bg-white/80 p-8 text-center text-slate-600 shadow-sm backdrop-blur">
+      <div className="inventory-app-shell">
+        <div className="inventory-app-surface">
+          <div className="inventory-card inventory-motion-fade px-6 py-12 text-center text-base font-semibold text-slate-100">
             No inventory sheet available.
           </div>
         </div>
@@ -40,50 +40,99 @@ const InventorySheet = () => {
     );
   }
 
+  const downloadButtonProps = {
+    sheet,
+    isComplete,
+    onDownloadComplete: resetSheet,
+  };
+
+  const desktopDownloadButton = (
+    <DownloadButton
+      {...downloadButtonProps}
+      className="hidden w-full md:inline-flex md:w-auto md:min-w-[220px]"
+    />
+  );
+
+  const mobileDownloadButton = (
+    <DownloadButton
+      {...downloadButtonProps}
+      className="w-full"
+    />
+  );
+
   return (
-    <div className="relative min-h-screen bg-slate-100">
-      <div className="mx-auto w-full max-w-5xl px-4 pb-12 pt-4 sm:px-6 lg:px-8">
-        <div className="space-y-4">
+    <div className="inventory-app-shell">
+      <main className="inventory-app-surface">
+        <div className="space-y-8 sm:space-y-10">
           <SheetHeader
             sheet={sheet}
             onFieldChange={updateSheetField}
-            downloadButton={
-              <DownloadButton
-                sheet={sheet}
-                isComplete={isComplete}
-                onDownloadComplete={resetSheet}
-              />
-            }
+            downloadButton={desktopDownloadButton}
           />
 
           {error && (
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm font-medium text-amber-700 shadow-sm">
+            <div className="inventory-card inventory-motion-fade inventory-motion-delay-1 border border-amber-500/30 bg-amber-500/10 px-5 py-4 text-center text-sm font-semibold text-amber-100 shadow-[0_16px_24px_-20px_rgba(251,191,36,0.45)]">
               There was a problem loading your saved sheet. A new sheet has
               been created.
             </div>
           )}
 
-          <section className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
-            <InventoryTableSection
-              title="At the start of the day"
-              rows={startOfDayRows}
-              sheet={sheet}
-              totalsHeading="Totals"
-              onFieldChange={updateSheetField}
-              className="h-full"
+          <section className="inventory-section-group inventory-motion-fade inventory-motion-delay-1">
+            <input
+              type="radio"
+              id="inventory-view-start"
+              name="inventory-mobile-view"
+              defaultChecked
+              className="inventory-view-input"
+            />
+            <input
+              type="radio"
+              id="inventory-view-end"
+              name="inventory-mobile-view"
+              className="inventory-view-input"
             />
 
-            <InventoryTableSection
-              title="At the end of the day"
-              rows={endOfDayRows}
-              sheet={sheet}
-              totalsHeading="Totals"
-              onFieldChange={updateSheetField}
-              className="h-full"
-            />
+            <div className="inventory-mobile-tabs">
+              <label htmlFor="inventory-view-start" className="inventory-mobile-tab">
+                Start of Day
+              </label>
+              <label htmlFor="inventory-view-end" className="inventory-mobile-tab">
+                End of Day
+              </label>
+            </div>
+
+            <div className="inventory-section-cards space-y-6 md:grid md:grid-cols-2 md:gap-5 md:space-y-0">
+              <InventoryTableSection
+                title="At the start of the day"
+                rows={startOfDayRows}
+                sheet={sheet}
+                totalsHeading="Totals"
+                onFieldChange={updateSheetField}
+                className="inventory-section-card inventory-section-card--start h-full inventory-motion-delay-1"
+              />
+
+              <InventoryTableSection
+                title="At the end of the day"
+                rows={endOfDayRows}
+                sheet={sheet}
+                totalsHeading="Totals"
+                onFieldChange={updateSheetField}
+                className="inventory-section-card inventory-section-card--end h-full inventory-motion-delay-2"
+              />
+            </div>
           </section>
 
           <ProductTotalsSection totals={soldTotals} />
+        </div>
+      </main>
+
+      <div className="inventory-mobile-action-bar md:hidden">
+        <div className="inventory-mobile-action-bar__panel">
+          <div className="inventory-mobile-action-bar__text">
+            <span className="inventory-mobile-action-bar__eyebrow">Ready</span>
+            <p className="inventory-mobile-action-bar__title">Export your report</p>
+          </div>
+          {mobileDownloadButton}
         </div>
       </div>
     </div>
