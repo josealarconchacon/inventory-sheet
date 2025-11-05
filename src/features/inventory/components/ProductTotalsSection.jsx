@@ -5,30 +5,30 @@ const ProductTotalsSection = ({ totals }) => {
   const safeTotals = totals ?? {};
 
   return (
-    <section className="rounded-3xl border border-slate-200 bg-gradient-to-br from-white/95 via-white/90 to-slate-50/90 shadow-sm backdrop-blur">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-900">Product totals</h2>
-          <p className="text-sm text-slate-500">
+    <section className="inventory-card inventory-motion-fade inventory-motion-delay-3">
+      <header className="flex flex-col gap-2 border-b border-white/10 px-5 py-5 sm:px-6 sm:py-6 md:flex-row md:items-center md:justify-between md:gap-3">
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold text-slate-100 sm:text-xl">Product totals</h2>
+          <p className="text-sm text-slate-400">
             See what sold today after factoring starting and ending counts.
           </p>
         </div>
-        <span className="rounded-full bg-blue-50 px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-blue-600">
+        <span className="self-start rounded-full bg-blue-500/20 px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-blue-100 ring-1 ring-inset ring-blue-400/40 md:self-center">
           Live
         </span>
       </header>
 
-      <div className="grid gap-3 px-4 py-4 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-4 px-5 py-5 sm:grid-cols-3">
         {productTotalsRows.map(({ key, label }) => (
           <article
             key={key}
-            className="flex flex-col gap-2 rounded-2xl border border-transparent bg-white/80 px-4 py-3 shadow-inner shadow-blue-50 transition hover:border-blue-200 hover:shadow-lg"
+            className="group flex flex-col items-center gap-2 rounded-2xl bg-white/5 px-4 py-5 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition-all duration-200 hover:-translate-y-[2px] hover:bg-white/10 hover:shadow-[0_20px_36px_-28px_rgba(59,130,246,0.65)]"
           >
-            <span className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.32em] text-slate-400">
               Sold today
             </span>
-            <p className="text-sm font-medium text-slate-600">{label}</p>
-            <span className="text-2xl font-bold text-blue-700">
+            <p className="text-sm font-medium text-slate-300">{label}</p>
+            <span className="text-2xl font-bold text-slate-100 sm:text-[1.65rem]">
               {formatSoldValue(safeTotals[key])}
             </span>
           </article>
