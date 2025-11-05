@@ -1,5 +1,5 @@
 const baseInputClasses =
-  "h-11 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-base font-medium text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100";
+  "h-12 rounded-2xl border border-white/10 bg-white/5 px-4 text-base font-semibold text-slate-100 placeholder:text-slate-400/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition-all duration-200 focus:border-blue-400/60 focus:bg-blue-500/5 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.28)] focus:outline-none";
 
 const SheetHeader = ({ sheet, onFieldChange, downloadButton }) => {
   if (!sheet) {
@@ -15,27 +15,32 @@ const SheetHeader = ({ sheet, onFieldChange, downloadButton }) => {
   };
 
   return (
-    <header className="rounded-3xl border border-slate-200 bg-white/90 px-5 py-5 shadow-sm backdrop-blur">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <span className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">
+    <header className="inventory-card inventory-motion-fade px-5 py-6 sm:px-7 sm:py-8">
+      <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+        <div className="space-y-3 text-left">
+          <span className="inline-flex items-center gap-2 rounded-full bg-blue-500/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.32em] text-blue-200">
             Oyster Party
           </span>
-          <h1 className="mt-2 text-2xl font-bold text-slate-900 sm:text-1xl">
-            Beginning + End of Day Inventory
-          </h1>
-          <p className="mt-1 max-w-xl text-sm text-slate-500">
-            Manage daily counts with quick updates, built-in totals, and instant
-            exports.
-          </p>
+          <div className="space-y-2">
+            <h1 className="text-3xl font-bold text-slate-100 sm:text-4xl">
+              Daily Inventory
+            </h1>
+            <p className="text-sm text-slate-300 md:max-w-lg">
+              Stay aligned from opening to close. Keep your product counts,
+              cash totals, and sales insights synced in one polished view.
+            </p>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 self-start">
-          {downloadButton}
-        </div>
+        {downloadButton ? (
+          <div className="flex w-full justify-center md:w-auto md:justify-end">
+            {downloadButton}
+          </div>
+        ) : null}
       </div>
-      <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <label className="flex flex-col gap-1 text-sm font-semibold text-slate-700">
+
+      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <label className="flex flex-col gap-1 text-sm font-semibold text-slate-200">
           Team lead
           <input
             type="text"
@@ -46,7 +51,7 @@ const SheetHeader = ({ sheet, onFieldChange, downloadButton }) => {
           />
         </label>
 
-        <label className="flex flex-col gap-1 text-sm font-semibold text-slate-700">
+        <label className="flex flex-col gap-1 text-sm font-semibold text-slate-200">
           Location
           <input
             type="text"
@@ -57,13 +62,13 @@ const SheetHeader = ({ sheet, onFieldChange, downloadButton }) => {
           />
         </label>
 
-        <label className="flex flex-col gap-1 text-sm font-semibold text-slate-700 sm:col-span-2 lg:col-span-1">
+        <label className="flex flex-col gap-1 text-sm font-semibold text-slate-200 sm:col-span-2 lg:col-span-1">
           Date
           <input
             type="date"
             value={sheet.date ?? ""}
             onChange={handleFieldChange("date")}
-            className={baseInputClasses}
+            className={`${baseInputClasses} inventory-date-input`}
           />
         </label>
       </div>
