@@ -32,9 +32,13 @@ const InventoryTableSection = ({
           prefix = "",
           formatValue,
           cellClassName,
+          step,
+          min,
+          max,
         }) => {
           const value = sheet?.[key] ?? "";
           const displayValue = formatValue ? formatValue(value, sheet) : value;
+          const showEditablePrefix = !!prefix && !readOnly;
 
           return (
             <div
@@ -54,14 +58,26 @@ const InventoryTableSection = ({
                     {displayValue}
                   </span>
                 ) : (
-                  <input
-                    type={type}
-                    inputMode={type === "number" ? "decimal" : undefined}
-                    value={value}
-                    onChange={(event) => onFieldChange?.(key, event.target.value)}
-                    placeholder={placeholder}
-                    className="h-12 w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-base font-semibold text-slate-100 placeholder:text-slate-400/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition-all duration-200 focus:border-blue-400/60 focus:bg-blue-500/5 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.28)] focus:outline-none md:min-w-[140px] md:w-auto md:text-right"
-                  />
+                  <div className="relative w-full md:w-auto md:min-w-[140px]">
+                    {showEditablePrefix ? (
+                      <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-sm font-semibold text-slate-300/80">
+                        {prefix}
+                      </span>
+                    ) : null}
+                    <input
+                      type={type}
+                      inputMode={type === "number" ? "decimal" : undefined}
+                      value={value}
+                      step={step}
+                      min={min}
+                      max={max}
+                      onChange={(event) => onFieldChange?.(key, event.target.value)}
+                      placeholder={placeholder}
+                      className={`h-12 w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-base font-semibold text-slate-100 placeholder:text-slate-400/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition-all duration-200 focus:border-blue-400/60 focus:bg-blue-500/5 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.28)] focus:outline-none md:text-right ${
+                        showEditablePrefix ? "pl-12" : ""
+                      }`}
+                    />
+                  </div>
                 )}
               </div>
             </div>

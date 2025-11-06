@@ -6,7 +6,10 @@ export const startOfDayRows = [
   {
     key: "startCash",
     label: "Total starting Cash (should be $200)",
-    readOnly: true,
+    type: "number",
+    step: 1,
+    min: 0,
+    placeholder: "200",
     prefix: "$",
   },
 ];
