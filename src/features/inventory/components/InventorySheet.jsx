@@ -54,10 +54,7 @@ const InventorySheet = () => {
   );
 
   const mobileDownloadButton = (
-    <DownloadButton
-      {...downloadButtonProps}
-      className="w-full"
-    />
+    <DownloadButton {...downloadButtonProps} className="w-full" />
   );
 
   return (
@@ -72,8 +69,8 @@ const InventorySheet = () => {
 
           {error && (
             <div className="inventory-card inventory-motion-fade inventory-motion-delay-1 border border-amber-500/30 bg-amber-500/10 px-5 py-4 text-center text-sm font-semibold text-amber-100 shadow-[0_16px_24px_-20px_rgba(251,191,36,0.45)]">
-              There was a problem loading your saved sheet. A new sheet has
-              been created.
+              There was a problem loading your saved sheet. A new sheet has been
+              created.
             </div>
           )}
 
@@ -93,10 +90,16 @@ const InventorySheet = () => {
             />
 
             <div className="inventory-mobile-tabs">
-              <label htmlFor="inventory-view-start" className="inventory-mobile-tab">
+              <label
+                htmlFor="inventory-view-start"
+                className="inventory-mobile-tab"
+              >
                 Start of Day
               </label>
-              <label htmlFor="inventory-view-end" className="inventory-mobile-tab">
+              <label
+                htmlFor="inventory-view-end"
+                className="inventory-mobile-tab"
+              >
                 End of Day
               </label>
             </div>
@@ -122,7 +125,9 @@ const InventorySheet = () => {
             </div>
           </section>
 
-          <ProductTotalsSection totals={soldTotals} />
+          <div className="inventory-product-totals">
+            <ProductTotalsSection totals={soldTotals} />
+          </div>
         </div>
       </main>
 
@@ -130,7 +135,9 @@ const InventorySheet = () => {
         <div className="inventory-mobile-action-bar__panel">
           <div className="inventory-mobile-action-bar__text">
             <span className="inventory-mobile-action-bar__eyebrow">Ready</span>
-            <p className="inventory-mobile-action-bar__title">Export your report</p>
+            <p className="inventory-mobile-action-bar__title">
+              Export your report
+            </p>
           </div>
           {mobileDownloadButton}
         </div>

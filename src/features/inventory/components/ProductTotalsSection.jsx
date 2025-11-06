@@ -8,7 +8,9 @@ const ProductTotalsSection = ({ totals }) => {
     <section className="inventory-card inventory-motion-fade inventory-motion-delay-3">
       <header className="flex flex-col gap-2 border-b border-white/10 px-5 py-5 sm:px-6 sm:py-6 md:flex-row md:items-center md:justify-between md:gap-3">
         <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-slate-100 sm:text-xl">Product totals</h2>
+          <h2 className="text-lg font-semibold text-slate-100 sm:text-xl">
+            Product totals
+          </h2>
           <p className="text-sm text-slate-400">
             See what sold today after factoring starting and ending counts.
           </p>
@@ -39,4 +41,3 @@ const ProductTotalsSection = ({ totals }) => {
 };
 
 export default ProductTotalsSection;
-

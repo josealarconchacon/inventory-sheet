@@ -18,9 +18,16 @@
     color: #e2e8f0;
     font-feature-settings: "liga", "kern";
     -webkit-font-smoothing: antialiased;
-    background-image:
-      radial-gradient(120% 120% at 50% -10%, rgba(59, 130, 246, 0.25), transparent 60%),
-      radial-gradient(120% 120% at 20% 110%, rgba(14, 165, 233, 0.22), transparent 65%),
+    background-image: radial-gradient(
+        120% 120% at 50% -10%,
+        rgba(59, 130, 246, 0.25),
+        transparent 60%
+      ),
+      radial-gradient(
+        120% 120% at 20% 110%,
+        rgba(14, 165, 233, 0.22),
+        transparent 65%
+      ),
       linear-gradient(180deg, #0f172a 0%, #020617 100%);
   }
 }
@@ -40,7 +47,11 @@
     position: absolute;
     inset: -20% -25% auto -25%;
     height: 420px;
-    background: radial-gradient(90% 90% at 50% 10%, rgba(59, 130, 246, 0.45), transparent 70%);
+    background: radial-gradient(
+      90% 90% at 50% 10%,
+      rgba(59, 130, 246, 0.45),
+      transparent 70%
+    );
     filter: blur(65px);
     opacity: 0.75;
     pointer-events: none;
@@ -53,7 +64,11 @@
     right: -20%;
     width: 520px;
     height: 520px;
-    background: radial-gradient(80% 80% at 50% 50%, rgba(14, 165, 233, 0.18), transparent 75%);
+    background: radial-gradient(
+      80% 80% at 50% 50%,
+      rgba(14, 165, 233, 0.18),
+      transparent 75%
+    );
     filter: blur(60px);
     opacity: 0.6;
     pointer-events: none;
@@ -75,6 +90,7 @@
     position: relative;
     z-index: 1;
     width: min(100%, 960px);
+    padding-bottom: clamp(4rem, 12vw, 6rem);
   }
 
   .inventory-card {
@@ -82,13 +98,19 @@
     overflow: hidden;
     border-radius: 24px;
     border: 1px solid rgba(59, 130, 246, 0.18);
-    background: linear-gradient(150deg, rgba(2, 6, 23, 0.92) 0%, rgba(15, 23, 42, 0.88) 100%);
+    background: linear-gradient(
+      150deg,
+      rgba(2, 6, 23, 0.92) 0%,
+      rgba(15, 23, 42, 0.88) 100%
+    );
     box-shadow: 0 28px 45px -32px rgba(2, 6, 23, 0.8);
     backdrop-filter: blur(18px);
     color: #e2e8f0;
   }
 
-  @supports not ((-webkit-backdrop-filter: blur(0)) or (backdrop-filter: blur(0))) {
+  @supports not (
+    (-webkit-backdrop-filter: blur(0)) or (backdrop-filter: blur(0))
+  ) {
     .inventory-card {
       background: rgba(15, 23, 42, 0.94);
     }
@@ -98,7 +120,12 @@
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(140deg, rgba(59, 130, 246, 0.25) 0%, transparent 45%, rgba(30, 64, 175, 0.2) 100%);
+    background: linear-gradient(
+      140deg,
+      rgba(59, 130, 246, 0.25) 0%,
+      transparent 45%,
+      rgba(30, 64, 175, 0.2) 100%
+    );
     mix-blend-mode: lighten;
     pointer-events: none;
     opacity: 0.7;
@@ -150,7 +177,11 @@
     font-size: 0.875rem;
     font-weight: 600;
     color: #cbd5f5;
-    background: linear-gradient(140deg, rgba(15, 23, 42, 0.65), rgba(2, 6, 23, 0.75));
+    background: linear-gradient(
+      140deg,
+      rgba(15, 23, 42, 0.65),
+      rgba(2, 6, 23, 0.75)
+    );
     border: 1px solid rgba(94, 234, 212, 0.12);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
     transition: transform 160ms ease, box-shadow 200ms ease, color 160ms ease;
@@ -186,7 +217,8 @@
     color: #f8fafc;
     background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
     box-shadow: 0 24px 44px -26px rgba(37, 99, 235, 0.75);
-    transition: transform 180ms ease, box-shadow 220ms ease, filter 200ms ease, background 220ms ease;
+    transition: transform 180ms ease, box-shadow 220ms ease, filter 200ms ease,
+      background 220ms ease;
     border: none;
     cursor: pointer;
   }
@@ -195,7 +227,11 @@
     content: "";
     position: absolute;
     inset: -45% -30% -65% -30%;
-    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.65), transparent 60%);
+    background: radial-gradient(
+      circle at 30% 30%,
+      rgba(255, 255, 255, 0.65),
+      transparent 60%
+    );
     opacity: 0;
     transition: opacity 220ms ease;
     pointer-events: none;
@@ -216,7 +252,11 @@
   }
 
   .inventory-download-button:disabled {
-    background: linear-gradient(135deg, rgba(148, 163, 184, 0.95) 0%, rgba(148, 163, 184, 0.85) 100%);
+    background: linear-gradient(
+      135deg,
+      rgba(148, 163, 184, 0.95) 0%,
+      rgba(148, 163, 184, 0.85) 100%
+    );
     color: rgba(51, 65, 85, 0.8);
     box-shadow: none;
     cursor: not-allowed;
@@ -233,6 +273,10 @@
     stroke-width: 2;
   }
 
+  .inventory-product-totals {
+    margin-bottom: clamp(5rem, 8vw, 3.75rem);
+  }
+
   .inventory-date-input {
     color-scheme: dark;
     cursor: pointer;
@@ -244,9 +288,13 @@
     margin-inline-end: -0.25rem;
     border-radius: 0.75rem;
     padding: 0.25rem;
-    background:
-      radial-gradient(circle at 50% 50%, rgba(15, 23, 42, 0.85), rgba(2, 6, 23, 0.4)),
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f8fafc' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3.5' y='4.5' width='17' height='16' rx='3'%3E%3C/rect%3E%3Cpath d='M16 2v4M8 2v4M3.5 10.5h17'%3E%3C/path%3E%3Ccircle cx='8.75' cy='14' r='1'%3E%3C/circle%3E%3Ccircle cx='12' cy='14' r='1'%3E%3C/circle%3E%3Ccircle cx='15.25' cy='14' r='1'%3E%3C/circle%3E%3C/svg%3E") center/62% no-repeat;
+    background: radial-gradient(
+        circle at 50% 50%,
+        rgba(15, 23, 42, 0.85),
+        rgba(2, 6, 23, 0.4)
+      ),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f8fafc' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3.5' y='4.5' width='17' height='16' rx='3'%3E%3C/rect%3E%3Cpath d='M16 2v4M8 2v4M3.5 10.5h17'%3E%3C/path%3E%3Ccircle cx='8.75' cy='14' r='1'%3E%3C/circle%3E%3Ccircle cx='12' cy='14' r='1'%3E%3C/circle%3E%3Ccircle cx='15.25' cy='14' r='1'%3E%3C/circle%3E%3C/svg%3E")
+        center/62% no-repeat;
     opacity: 0.96;
     transition: opacity 150ms ease, transform 160ms ease, filter 160ms ease;
   }
@@ -283,7 +331,8 @@
       border-radius: 9999px;
       background: rgba(2, 6, 23, 0.7);
       border: 1px solid rgba(59, 130, 246, 0.25);
-      box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.18), 0 18px 45px -35px rgba(2, 6, 23, 0.9);
+      box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.18),
+        0 18px 45px -35px rgba(2, 6, 23, 0.9);
       backdrop-filter: blur(18px);
     }
 
@@ -301,15 +350,27 @@
       animation: inventory-fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
 
-    #inventory-view-start:checked ~ .inventory-mobile-tabs label[for="inventory-view-start"],
-    #inventory-view-end:checked ~ .inventory-mobile-tabs label[for="inventory-view-end"] {
-      background: linear-gradient(135deg, rgba(37, 99, 235, 0.95), rgba(79, 70, 229, 0.9));
+    #inventory-view-start:checked
+      ~ .inventory-mobile-tabs
+      label[for="inventory-view-start"],
+    #inventory-view-end:checked
+      ~ .inventory-mobile-tabs
+      label[for="inventory-view-end"] {
+      background: linear-gradient(
+        135deg,
+        rgba(37, 99, 235, 0.95),
+        rgba(79, 70, 229, 0.9)
+      );
       color: #f8fafc;
       box-shadow: 0 18px 32px -24px rgba(59, 130, 246, 0.75);
     }
 
-    #inventory-view-start:checked ~ .inventory-section-cards .inventory-section-card--start,
-    #inventory-view-end:checked ~ .inventory-section-cards .inventory-section-card--end {
+    #inventory-view-start:checked
+      ~ .inventory-section-cards
+      .inventory-section-card--start,
+    #inventory-view-end:checked
+      ~ .inventory-section-cards
+      .inventory-section-card--end {
       display: block;
     }
 
@@ -339,6 +400,14 @@
       gap: 0.75rem;
       align-items: center;
       animation: inventory-fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .inventory-product-totals {
+      margin-bottom: clamp(6rem, 26vw, 8rem);
+    }
+
+    .inventory-app-surface {
+      padding-bottom: clamp(7rem, 28vw, 9rem);
     }
 
     .inventory-mobile-action-bar__text {
