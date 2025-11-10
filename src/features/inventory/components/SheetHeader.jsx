@@ -20,29 +20,32 @@ const SheetHeader = ({ sheet, onFieldChange, downloadButton }) => {
     <header className="inventory-card inventory-motion-fade px-5 py-6 sm:px-7 sm:py-8">
       <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
         <div className="space-y-3 text-left">
-          <span className="inline-flex items-center gap-2 rounded-full bg-blue-500/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.32em] text-blue-200">
-            Oyster Party
-          </span>
+          <div className="flex items-center justify-between gap-3">
+            <span className="inline-flex items-center gap-2 rounded-full bg-blue-500/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.32em] text-blue-200">
+              Oyster Party
+            </span>
+            <ThemeToggleButton className="md:hidden" />
+          </div>
           <div className="space-y-2">
             <h1 className="text-3xl font-bold text-slate-100 sm:text-4xl">
               Daily Inventory
             </h1>
             <p className="text-sm text-slate-300 md:max-w-lg">
-              Stay aligned from opening to close. Keep your product counts,
-              cash totals, and sales insights synced in one polished view.
+              Stay aligned from opening to close. Keep your product counts, cash
+              totals, and sales insights synced in one polished view.
             </p>
           </div>
         </div>
 
         <div className="flex w-full flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center md:w-auto md:flex-row md:items-center md:justify-end">
           {downloadButton ?? null}
-          <ThemeToggleButton className="w-full sm:w-auto md:w-auto" />
+          <ThemeToggleButton className="hidden md:inline-flex" />
         </div>
       </div>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <label className="flex flex-col gap-1 text-sm font-semibold text-slate-200">
-          Team lead
+          Staff Names
           <input
             type="text"
             placeholder="Who is on shift?"
@@ -56,7 +59,7 @@ const SheetHeader = ({ sheet, onFieldChange, downloadButton }) => {
           Location
           <input
             type="text"
-            placeholder="e.g. Downtown cart"
+            placeholder="Williamsburg..."
             value={sheet.location ?? ""}
             onChange={handleFieldChange("location")}
             className={baseInputClasses}
