@@ -6,7 +6,22 @@ import { isSheetComplete } from "../utils/sheetUtils.js";
 const STORAGE_KEY = "sheet:current";
 const STARTING_CASH = "200";
 
-const getTodayIsoDate = () => new Date().toISOString().split("T")[0];
+const getTodayIsoDate = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
+const getMillisecondsUntilNextDay = () => {
+  const now = new Date();
+  const nextMidnight = new Date(now);
+  nextMidnight.setHours(24, 0, 0, 0);
+
+  return Math.max(0, nextMidnight.getTime() - now.getTime());
+};
 
 const createEmptySheet = () => ({
   id: generateSheetId(),
@@ -14,6 +29,7 @@ const createEmptySheet = () => ({
   name: "",
   location: "",
   date: getTodayIsoDate(),
+  isDateAuto: true,
   startLobster: "",
   startBuns: "",
   startOysters: "",
@@ -25,6 +41,28 @@ const createEmptySheet = () => ({
   endCaviar: "",
   endCash: "",
 });
+
+const ensureSheetHasCurrentDate = (sheet) => {
+  if (!sheet) {
+    return sheet;
+  }
+
+  if (sheet.isDateAuto === false) {
+    return sheet;
+  }
+
+  const today = getTodayIsoDate();
+
+  if (sheet.date === today) {
+    return sheet;
+  }
+
+  return {
+    ...sheet,
+    date: today,
+    isDateAuto: true,
+  };
+};
 
 const sanitizeSheet = (sheet) => {
   if (!sheet || typeof sheet !== "object") {
@@ -42,6 +80,10 @@ const sanitizeSheet = (sheet) => {
         ? sheet.createdAt
         : fallback.createdAt,
     date: sheet.date ?? fallback.date,
+    isDateAuto:
+      typeof sheet.isDateAuto === "boolean"
+        ? sheet.isDateAuto
+        : fallback.isDateAuto,
   };
 };
 
@@ -121,8 +163,9 @@ export const useInventorySheets = () => {
       if (stored?.value) {
         const parsed = JSON.parse(stored.value);
         const normalized = sanitizeSheet(parsed);
-        setSheet(normalized);
-        void persistSheet(normalized);
+        const hydrated = ensureSheetHasCurrentDate(normalized);
+        setSheet(hydrated);
+        void persistSheet(hydrated);
         return;
       }
 
@@ -155,6 +198,10 @@ export const useInventorySheets = () => {
           [field]: value,
         };
 
+        if (field === "date") {
+          nextSheet.isDateAuto = value === getTodayIsoDate();
+        }
+
         void persistSheet(nextSheet);
 
         return nextSheet;
@@ -168,6 +215,61 @@ export const useInventorySheets = () => {
     setSheet(fresh);
     void persistSheet(fresh);
   }, [persistSheet]);
+
+  useEffect(() => {
+    if (!sheet?.isDateAuto) {
+      return;
+    }
+
+    const today = getTodayIsoDate();
+
+    if (sheet.date !== today) {
+      setSheet((previous) => {
+        if (!previous) {
+          return previous;
+        }
+
+        const nextSheet = {
+          ...previous,
+          date: today,
+          isDateAuto: true,
+        };
+
+        void persistSheet(nextSheet);
+
+        return nextSheet;
+      });
+
+      return;
+    }
+
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const timeoutMs = getMillisecondsUntilNextDay();
+    const timer = window.setTimeout(() => {
+      setSheet((previous) => {
+        if (!previous) {
+          return previous;
+        }
+
+        const nextSheet = {
+          ...previous,
+          date: getTodayIsoDate(),
+          isDateAuto: true,
+        };
+
+        void persistSheet(nextSheet);
+
+        return nextSheet;
+      });
+    }, timeoutMs);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [sheet, persistSheet]);
 
   const soldTotals = useMemo(() => calculateSoldTotals(sheet), [sheet]);
 
