@@ -1,11 +1,18 @@
+import { useEffect } from "react";
+
 import DownloadButton from "./DownloadButton.jsx";
 import InventoryTableSection from "./InventoryTableSection.jsx";
 import ProductTotalsSection from "./ProductTotalsSection.jsx";
 import SheetHeader from "./SheetHeader.jsx";
 import { useInventorySheets } from "../hooks/useInventorySheets.js";
 import { endOfDayRows, startOfDayRows } from "../constants/tableSections.js";
+import { initializeTheme } from "../utils/themeService.js";
 
 const InventorySheet = () => {
+  useEffect(() => {
+    initializeTheme();
+  }, []);
+
   const {
     sheet,
     isLoading,

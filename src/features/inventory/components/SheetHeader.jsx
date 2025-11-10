@@ -1,3 +1,5 @@
+import ThemeToggleButton from "./ThemeToggleButton.jsx";
+
 const baseInputClasses =
   "h-12 rounded-2xl border border-white/10 bg-white/5 px-4 text-base font-semibold text-slate-100 placeholder:text-slate-400/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition-all duration-200 focus:border-blue-400/60 focus:bg-blue-500/5 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.28)] focus:outline-none";
 
@@ -32,11 +34,10 @@ const SheetHeader = ({ sheet, onFieldChange, downloadButton }) => {
           </div>
         </div>
 
-        {downloadButton ? (
-          <div className="flex w-full justify-center md:w-auto md:justify-end">
-            {downloadButton}
-          </div>
-        ) : null}
+        <div className="flex w-full flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center md:w-auto md:flex-row md:items-center md:justify-end">
+          {downloadButton ?? null}
+          <ThemeToggleButton className="w-full sm:w-auto md:w-auto" />
+        </div>
       </div>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
