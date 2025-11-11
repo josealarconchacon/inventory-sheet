@@ -37,7 +37,9 @@ const createEmptySheet = () => ({
   startCash: STARTING_CASH,
   endLobster: "",
   endBuns: "",
+  endBunsBadNotes: "",
   endOysters: "",
+  endOystersBadNotes: "",
   endCaviar: "",
   endCash: "",
 });

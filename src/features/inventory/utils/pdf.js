@@ -31,8 +31,43 @@ const formatCellValue = (value, prefix) => {
   return prefix ? `${prefix}${stringValue}` : stringValue;
 };
 
+const hasNoteContent = (value) => {
+  if (value === undefined || value === null) {
+    return false;
+  }
+
+  if (typeof value === "string") {
+    return value.trim() !== "";
+  }
+
+  return true;
+};
+
 const buildSectionRows = (rows, sheet) =>
-  rows.map((row) => [row.label, formatCellValue(sheet?.[row.key], row.prefix)]);
+  rows.flatMap((row) => {
+    const primaryRow = [
+      row.label,
+      formatCellValue(sheet?.[row.key], row.prefix),
+    ];
+
+    if (!row.noteField) {
+      return [primaryRow];
+    }
+
+    const noteValue = sheet?.[row.noteField];
+
+    if (!hasNoteContent(noteValue)) {
+      return [primaryRow];
+    }
+
+    return [
+      primaryRow,
+      [
+        row.noteExportLabel ?? "Notes",
+        formatCellValue(noteValue),
+      ],
+    ];
+  });
 
 const buildTotalsRows = (totals) =>
   productTotalsRows.map(({ key, label }) => [
