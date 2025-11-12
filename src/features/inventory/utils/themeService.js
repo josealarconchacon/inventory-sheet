@@ -1,5 +1,6 @@
-const THEME_DEFAULT = "dark";
 const THEME_LIGHT = "light";
+const THEME_DARK = "dark";
+const THEME_DEFAULT = THEME_LIGHT;
 const THEME_STORAGE_KEY = "inventory-sheet-theme";
 
 const listeners = new Set();
@@ -19,7 +20,7 @@ const notifyListeners = () => {
 };
 
 const applyTheme = (theme) => {
-  const normalizedTheme = theme === THEME_LIGHT ? THEME_LIGHT : THEME_DEFAULT;
+  const normalizedTheme = theme === THEME_LIGHT ? THEME_LIGHT : THEME_DARK;
   currentTheme = normalizedTheme;
 
   if (!isBrowserEnvironment()) {
@@ -40,7 +41,7 @@ const applyTheme = (theme) => {
 
   try {
     window.localStorage?.setItem(THEME_STORAGE_KEY, normalizedTheme);
-  } catch (error) {
+  } catch {
     // Ignore storage errors (e.g., Safari private mode).
   }
 
@@ -55,10 +56,10 @@ const getStoredTheme = () => {
 
   try {
     const storedValue = window.localStorage?.getItem(THEME_STORAGE_KEY);
-    if (storedValue === THEME_LIGHT || storedValue === THEME_DEFAULT) {
+    if (storedValue === THEME_LIGHT || storedValue === THEME_DARK) {
       return storedValue;
     }
-  } catch (error) {
+  } catch {
     // Ignore read errors.
   }
 
@@ -71,7 +72,7 @@ const initializeTheme = () => {
 };
 
 const toggleTheme = () => {
-  const nextTheme = currentTheme === THEME_LIGHT ? THEME_DEFAULT : THEME_LIGHT;
+  const nextTheme = currentTheme === THEME_LIGHT ? THEME_DARK : THEME_LIGHT;
   return applyTheme(nextTheme);
 };
 
@@ -94,6 +95,7 @@ const isLightTheme = () => currentTheme === THEME_LIGHT;
 export {
   THEME_DEFAULT,
   THEME_LIGHT,
+  THEME_DARK,
   applyTheme,
   getCurrentTheme,
   initializeTheme,
@@ -101,4 +103,3 @@ export {
   onThemeChange,
   toggleTheme,
 };
-
