@@ -14,9 +14,26 @@ const InventorySheet = () => {
   }, []);
 
   useEffect(() => {
-    if (typeof navigator !== "undefined" && navigator.storage?.persist) {
-      void navigator.storage.persist().catch(() => undefined);
-    }
+    const enablePersistentStorage = async () => {
+      if (typeof navigator === "undefined" || !navigator.storage?.persist)
+        return;
+
+      try {
+        const isPersisted = await navigator.storage.persisted();
+        if (!isPersisted) {
+          const granted = await navigator.storage.persist();
+          console.log(
+            granted ? "Persistent storage granted" : "Persistent storage denied"
+          );
+        } else {
+          console.log("Storage is already persistent");
+        }
+      } catch (err) {
+        console.warn("Failed to enable persistent storage:", err);
+      }
+    };
+
+    void enablePersistentStorage();
   }, []);
 
   const {
