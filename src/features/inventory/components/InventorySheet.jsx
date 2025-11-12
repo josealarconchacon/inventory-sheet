@@ -13,6 +13,12 @@ const InventorySheet = () => {
     initializeTheme();
   }, []);
 
+  useEffect(() => {
+    if (typeof navigator !== "undefined" && navigator.storage?.persist) {
+      void navigator.storage.persist().catch(() => undefined);
+    }
+  }, []);
+
   const {
     sheet,
     isLoading,
