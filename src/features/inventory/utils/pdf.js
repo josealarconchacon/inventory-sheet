@@ -32,7 +32,23 @@ const formatCellValue = (value, prefix) => {
 };
 
 const buildSectionRows = (rows, sheet) =>
-  rows.map((row) => [row.label, formatCellValue(sheet?.[row.key], row.prefix)]);
+  rows.flatMap((row) => {
+    const primaryRow = [
+      row.label,
+      formatCellValue(sheet?.[row.key], row.prefix),
+    ];
+
+    if (!row.noteField) {
+      return [primaryRow];
+    }
+
+    const noteValue = sheet?.[row.noteField];
+
+    return [
+      primaryRow,
+      [row.noteExportLabel ?? "Notes", formatCellValue(noteValue)],
+    ];
+  });
 
 const buildTotalsRows = (totals) =>
   productTotalsRows.map(({ key, label }) => [
@@ -73,9 +89,14 @@ export const downloadSheetPdf = async (sheet) => {
 
   const JsPdfConstructor = jsPdfModule.jsPDF ?? jsPdfModule.default;
   const autoTable =
-    autoTableModule.default ?? autoTableModule.autoTable ?? autoTableModule.jsPDF;
+    autoTableModule.default ??
+    autoTableModule.autoTable ??
+    autoTableModule.jsPDF;
 
-  if (typeof JsPdfConstructor !== "function" || typeof autoTable !== "function") {
+  if (
+    typeof JsPdfConstructor !== "function" ||
+    typeof autoTable !== "function"
+  ) {
     throw new Error("PDF export libraries failed to load");
   }
 
@@ -116,11 +137,17 @@ export const downloadSheetPdf = async (sheet) => {
     theme: "grid",
     margin: tableMargin,
     styles: { fontSize: 10, cellPadding: 6 },
-    headStyles: { fillColor: [219, 234, 254], textColor: 32, fontStyle: "bold" },
+    headStyles: {
+      fillColor: [219, 234, 254],
+      textColor: 32,
+      fontStyle: "bold",
+    },
     columnStyles: { 1: { halign: "right" } },
   });
 
-  currentY = doc.lastAutoTable?.finalY ? doc.lastAutoTable.finalY + 18 : currentY;
+  currentY = doc.lastAutoTable?.finalY
+    ? doc.lastAutoTable.finalY + 18
+    : currentY;
 
   autoTable(doc, {
     head: [["At the end of the day", "Totals"]],
@@ -129,11 +156,17 @@ export const downloadSheetPdf = async (sheet) => {
     theme: "grid",
     margin: tableMargin,
     styles: { fontSize: 10, cellPadding: 6 },
-    headStyles: { fillColor: [226, 232, 240], textColor: 32, fontStyle: "bold" },
+    headStyles: {
+      fillColor: [226, 232, 240],
+      textColor: 32,
+      fontStyle: "bold",
+    },
     columnStyles: { 1: { halign: "right" } },
   });
 
-  currentY = doc.lastAutoTable?.finalY ? doc.lastAutoTable.finalY + 18 : currentY;
+  currentY = doc.lastAutoTable?.finalY
+    ? doc.lastAutoTable.finalY + 18
+    : currentY;
 
   autoTable(doc, {
     head: [["Product totals", ""]],
@@ -142,10 +175,13 @@ export const downloadSheetPdf = async (sheet) => {
     theme: "grid",
     margin: tableMargin,
     styles: { fontSize: 10, cellPadding: 6 },
-    headStyles: { fillColor: [191, 219, 254], textColor: 25, fontStyle: "bold" },
+    headStyles: {
+      fillColor: [191, 219, 254],
+      textColor: 25,
+      fontStyle: "bold",
+    },
     columnStyles: { 1: { halign: "right" } },
   });
 
   doc.save(createFilename(safeSheet));
 };
-
