@@ -89,6 +89,55 @@ const sanitizeSheet = (sheet) => {
   };
 };
 
+const openIndexedDb = () => {
+  return new Promise((resolve, reject) => {
+    if (typeof window === "undefined" || !window.indexedDB) {
+      reject(new Error("IndexedDB unavailable"));
+      return;
+    }
+
+    const request = window.indexedDB.open("inventory-sheet", 1);
+
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains("kv")) {
+        db.createObjectStore("kv");
+      }
+    };
+
+    request.onsuccess = () => {
+      resolve(request.result);
+    };
+
+    request.onerror = () => {
+      reject(request.error || new Error("IndexedDB open error"));
+    };
+  });
+};
+
+const idbGet = (db, key) => {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("kv", "readonly");
+    const store = tx.objectStore("kv");
+    const req = store.get(key);
+    req.onsuccess = () => resolve(req.result ?? null);
+    req.onerror = () => reject(req.error || new Error("IndexedDB get error"));
+  });
+};
+
+const idbSetOrDelete = (db, key, value) => {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("kv", "readwrite");
+    const store = tx.objectStore("kv");
+    const req =
+      value === null || value === undefined
+        ? store.delete(key)
+        : store.put(value, key);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error || new Error("IndexedDB write error"));
+  });
+};
+
 const getStorageClient = () => {
   if (typeof window === "undefined") {
     return null;
@@ -96,6 +145,45 @@ const getStorageClient = () => {
 
   if (window.storage?.get && window.storage?.set) {
     return window.storage;
+  }
+
+  if (typeof window.indexedDB !== "undefined") {
+    const dbPromise = openIndexedDb().catch(() => null);
+
+    return {
+      async get(key) {
+        const db = await dbPromise;
+        if (!db) {
+          return null;
+        }
+        const value = await idbGet(db, key);
+        if (value) {
+          return { value };
+        }
+        if (typeof window.localStorage !== "undefined") {
+          const lsValue = window.localStorage.getItem(key);
+          if (lsValue) {
+            await idbSetOrDelete(db, key, lsValue);
+            return { value: lsValue };
+          }
+        }
+        return null;
+      },
+      async set(key, value) {
+        const db = await dbPromise;
+        if (!db) {
+          return;
+        }
+        await idbSetOrDelete(db, key, value);
+      },
+      async remove(key) {
+        const db = await dbPromise;
+        if (!db) {
+          return;
+        }
+        await idbSetOrDelete(db, key, null);
+      },
+    };
   }
 
   if (typeof window.localStorage !== "undefined") {
