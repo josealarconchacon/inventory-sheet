@@ -74,24 +74,26 @@ describe("calculateSoldTotals", () => {
 });
 
 describe("generateSheetId", () => {
-  afterEach(() => {
-    vi.unstubAllGlobals?.();
-  });
-
   test("uses crypto.randomUUID when available", () => {
     const mockRandomUUID = vi.fn(() => "mock-uuid-123");
-    vi.stubGlobal("crypto", { randomUUID: mockRandomUUID });
+    const cryptoGetSpy = vi
+      .spyOn(globalThis, "crypto", "get")
+      .mockReturnValue({ randomUUID: mockRandomUUID });
 
     expect(generateSheetId()).toBe("mock-uuid-123");
     expect(mockRandomUUID).toHaveBeenCalled();
+    cryptoGetSpy.mockRestore();
   });
 
   test("falls back to Date.now when crypto is unavailable", () => {
-    vi.stubGlobal("crypto", undefined);
+    const cryptoGetSpy = vi
+      .spyOn(globalThis, "crypto", "get")
+      .mockReturnValue(undefined);
     const mockNow = vi.spyOn(Date, "now").mockReturnValue(123456789);
 
     expect(generateSheetId()).toBe("123456789");
 
     mockNow.mockRestore();
+    cryptoGetSpy.mockRestore();
   });
 });
