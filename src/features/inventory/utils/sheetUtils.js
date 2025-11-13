@@ -4,7 +4,7 @@ const editableFieldKeys = [...startOfDayRows, ...endOfDayRows]
   .filter((row) => !row.readOnly)
   .map((row) => row.key);
 
-const isBlank = (value) => {
+export const isBlank = (value) => {
   if (value === undefined || value === null) {
     return true;
   }
@@ -23,4 +23,3 @@ export const isSheetComplete = (sheet) => {
 
   return editableFieldKeys.every((key) => !isBlank(sheet[key]));
 };
-
