@@ -23,11 +23,14 @@ export const calculateSoldTotals = (sheet) => {
 };
 
 export const generateSheetId = () => {
-  if (
-    typeof crypto !== "undefined" &&
-    typeof crypto.randomUUID === "function"
-  ) {
-    return crypto.randomUUID();
+  try {
+    const maybeCrypto =
+      typeof globalThis !== "undefined" ? globalThis.crypto : undefined;
+    if (maybeCrypto && typeof maybeCrypto.randomUUID === "function") {
+      return maybeCrypto.randomUUID();
+    }
+  } catch {
+    // If randomUUID access or call fails, fall back below.
   }
 
   return Date.now().toString();

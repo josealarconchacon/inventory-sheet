@@ -75,25 +75,26 @@ describe("calculateSoldTotals", () => {
 
 describe("generateSheetId", () => {
   test("uses crypto.randomUUID when available", () => {
-    const mockRandomUUID = vi.fn(() => "mock-uuid-123");
-    const cryptoGetSpy = vi
-      .spyOn(globalThis, "crypto", "get")
-      .mockReturnValue({ randomUUID: mockRandomUUID });
+    const mockRandomUUID = vi
+      .spyOn(globalThis.crypto, "randomUUID")
+      .mockReturnValue("mock-uuid-123");
 
     expect(generateSheetId()).toBe("mock-uuid-123");
     expect(mockRandomUUID).toHaveBeenCalled();
-    cryptoGetSpy.mockRestore();
+    mockRandomUUID.mockRestore();
   });
 
   test("falls back to Date.now when crypto is unavailable", () => {
-    const cryptoGetSpy = vi
-      .spyOn(globalThis, "crypto", "get")
-      .mockReturnValue(undefined);
+    const mockRandomUUID = vi
+      .spyOn(globalThis.crypto, "randomUUID")
+      .mockImplementation(() => {
+        throw new Error("unavailable");
+      });
     const mockNow = vi.spyOn(Date, "now").mockReturnValue(123456789);
 
     expect(generateSheetId()).toBe("123456789");
 
     mockNow.mockRestore();
-    cryptoGetSpy.mockRestore();
+    mockRandomUUID.mockRestore();
   });
 });
