@@ -102,4 +102,5 @@ export {
   isLightTheme,
   onThemeChange,
   toggleTheme,
+  getStoredTheme,
 };
