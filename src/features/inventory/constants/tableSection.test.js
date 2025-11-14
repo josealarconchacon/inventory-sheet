@@ -87,7 +87,9 @@ describe("tableSection config tests", () => {
 
   describe("productTotalsRows", () => {
     test("has correct number of rows", () => {
-      expect(productTotalsRows.length).toBe(3);
+      // Expected 3 rows: Subtotal, Tax, and Total
+      const EXPECTED_PRODUCT_TOTALS_COUNT = 3;
+      expect(productTotalsRows.length).toBe(EXPECTED_PRODUCT_TOTALS_COUNT);
     });
 
     test("each row has key and label", () => {
