@@ -56,9 +56,12 @@ const DownloadButton = ({
       className={`inventory-download-button ${className}`.trim()}
     >
       {isDownloading ? (
-        <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+        <Loader2
+          className="h-4 w-4 shrink-0 animate-spin"
+          data-testid="loader-icon"
+        />
       ) : (
-        <Download className="h-4 w-4 shrink-0" />
+        <Download className="h-4 w-4 shrink-0" data-testid="download-icon" />
       )}
       <span className="font-semibold">Download PDF</span>
     </button>
