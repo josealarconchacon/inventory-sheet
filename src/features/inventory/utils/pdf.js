@@ -158,9 +158,18 @@ export const downloadSheetPdf = async (sheet) => {
     format: "letter",
   });
 
+  // Layout constants — derived from letter-portrait dimensions (612 × 792 pt).
   const marginX = 42;
   const headerY = 56;
   const tableMargin = { left: marginX, right: marginX };
+  const CELL_PADDING = 6;
+  const FONT_SIZE = 10;
+  // Pin the value column to a fixed width so every table aligns and so we can
+  // pre-compute exact row heights for emoji cells before autotable runs.
+  const VALUE_COL_WIDTH = Math.floor((612 - marginX * 2) * 0.38); // ≈ 200 pt
+
+  const sharedColumnStyles = { 1: { cellWidth: VALUE_COL_WIDTH, halign: "right" } };
+
   const soldTotals = calculateSoldTotals(safeSheet);
 
   doc.setFont("helvetica", "bold");
@@ -188,23 +197,24 @@ export const downloadSheetPdf = async (sheet) => {
     startY: currentY,
     theme: "grid",
     margin: tableMargin,
-    styles: { fontSize: 10, cellPadding: 6 },
+    styles: { fontSize: FONT_SIZE, cellPadding: CELL_PADDING },
     headStyles: {
       fillColor: [219, 234, 254],
       textColor: 32,
       fontStyle: "bold",
     },
-    columnStyles: { 1: { halign: "right" } },
+    columnStyles: sharedColumnStyles,
   });
 
   currentY = doc.lastAutoTable?.finalY
     ? doc.lastAutoTable.finalY + 18
     : currentY;
 
-  // Identify which body-row indices in the end-of-day table are note rows that
-  // contain emoji. Those cells need canvas-based rendering because standard PDF
-  // fonts don't carry emoji glyphs.
-  const emojiNoteRows = new Map(); // bodyRowIndex → raw note text
+  // Pre-render emoji note cells before the autoTable call so we know the exact
+  // image height and can pass it as minCellHeight during the parse phase.
+  // (autotable fixes row heights at parse time; didDrawCell fires too late to
+  // resize a row that was already measured too small.)
+  const emojiNoteRows = new Map(); // bodyRowIndex → { text, minHeight }
   {
     let bodyIdx = 0;
     for (const row of endOfDayRows) {
@@ -213,15 +223,17 @@ export const downloadSheetPdf = async (sheet) => {
         const rawNote = safeSheet?.[row.noteField];
         const noteText = typeof rawNote === "string" ? rawNote : "";
         if (noteText && containsEmoji(noteText)) {
-          emojiNoteRows.set(bodyIdx, noteText);
+          const pre = renderEmojiText(noteText, VALUE_COL_WIDTH, FONT_SIZE, CELL_PADDING);
+          emojiNoteRows.set(bodyIdx, {
+            text: noteText,
+            // Add top + bottom cell padding so the image never clips.
+            minHeight: pre ? pre.heightPt + CELL_PADDING * 2 : CELL_PADDING * 4,
+          });
         }
         bodyIdx++; // note row
       }
     }
   }
-
-  const CELL_PADDING = 6;
-  const FONT_SIZE = 10;
 
   autoTable(doc, {
     head: [["At the end of the day", "Totals"]],
@@ -229,47 +241,49 @@ export const downloadSheetPdf = async (sheet) => {
     startY: currentY,
     theme: "grid",
     margin: tableMargin,
-    styles: { fontSize: FONT_SIZE, cellPadding: CELL_PADDING },
+    styles: { fontSize: FONT_SIZE, cellPadding: CELL_PADDING, overflow: "linebreak" },
     headStyles: {
       fillColor: [226, 232, 240],
       textColor: 32,
       fontStyle: "bold",
     },
-    columnStyles: { 1: { halign: "right" } },
+    columnStyles: sharedColumnStyles,
     didParseCell: (data) => {
       if (
-        data.row.section === "body" &&
-        emojiNoteRows.has(data.row.index) &&
-        data.column.index === 1
+        data.row.section !== "body" ||
+        !emojiNoteRows.has(data.row.index) ||
+        data.column.index !== 1
       ) {
-        // Reserve vertical space for the image; suppress default text drawing.
-        data.cell.text = [];
-        data.cell.styles.minCellHeight = 28;
+        return;
       }
+      const { minHeight } = emojiNoteRows.get(data.row.index);
+      // Clear the raw text so autotable doesn't try to draw the emoji string
+      // (which would produce broken boxes). The canvas image replaces it.
+      data.cell.text = [];
+      data.cell.styles.minCellHeight = minHeight;
     },
     didDrawCell: (data) => {
       if (
-        data.row.section === "body" &&
-        emojiNoteRows.has(data.row.index) &&
-        data.column.index === 1
+        data.row.section !== "body" ||
+        !emojiNoteRows.has(data.row.index) ||
+        data.column.index !== 1
       ) {
-        const noteText = emojiNoteRows.get(data.row.index);
-        const rendered = renderEmojiText(
-          noteText,
-          data.cell.width,
-          FONT_SIZE,
-          CELL_PADDING,
+        return;
+      }
+      const { text } = emojiNoteRows.get(data.row.index);
+      // Re-render with the actual cell width autotable assigned (matches
+      // VALUE_COL_WIDTH since we set it explicitly, but use data.cell.width
+      // to be safe against any autotable rounding).
+      const rendered = renderEmojiText(text, data.cell.width, FONT_SIZE, CELL_PADDING);
+      if (rendered) {
+        doc.addImage(
+          rendered.dataUrl,
+          "PNG",
+          data.cell.x + CELL_PADDING,
+          data.cell.y + CELL_PADDING,
+          rendered.widthPt,
+          rendered.heightPt,
         );
-        if (rendered) {
-          doc.addImage(
-            rendered.dataUrl,
-            "PNG",
-            data.cell.x + CELL_PADDING,
-            data.cell.y + CELL_PADDING,
-            rendered.widthPt,
-            rendered.heightPt,
-          );
-        }
       }
     },
   });
@@ -284,13 +298,13 @@ export const downloadSheetPdf = async (sheet) => {
     startY: currentY,
     theme: "grid",
     margin: tableMargin,
-    styles: { fontSize: 10, cellPadding: 6 },
+    styles: { fontSize: FONT_SIZE, cellPadding: CELL_PADDING },
     headStyles: {
       fillColor: [191, 219, 254],
       textColor: 25,
       fontStyle: "bold",
     },
-    columnStyles: { 1: { halign: "right" } },
+    columnStyles: sharedColumnStyles,
   });
 
   doc.save(createFilename(safeSheet));
