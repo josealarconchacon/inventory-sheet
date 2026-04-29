@@ -17,12 +17,15 @@ const sanitizeFilenamePart = (value) => {
     .replace(/^-+|-+$/g, "");
 };
 
+const stripEmoji = (text) =>
+  text.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, "").trim();
+
 const formatCellValue = (value, prefix) => {
   if (value === undefined || value === null) {
     return "—";
   }
 
-  const stringValue = String(value).trim();
+  const stringValue = stripEmoji(String(value).trim());
 
   if (stringValue === "") {
     return "—";
