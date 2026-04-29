@@ -17,15 +17,64 @@ const sanitizeFilenamePart = (value) => {
     .replace(/^-+|-+$/g, "");
 };
 
-const stripEmoji = (text) =>
-  text.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, "").trim();
+const containsEmoji = (text) =>
+  /[\p{Emoji_Presentation}\p{Extended_Pictographic}]/u.test(String(text));
+
+const renderEmojiText = (text, cellWidthPt, fontSize, cellPadding) => {
+  if (typeof document === "undefined") return null;
+
+  const dpr = window.devicePixelRatio || 1;
+  const innerWidthPt = Math.max(40, cellWidthPt - cellPadding * 2);
+  const fontPx = fontSize * dpr;
+  const fontStack = `${fontPx}px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", Arial, sans-serif`;
+
+  // Measure pass for word-wrap
+  const measureCanvas = document.createElement("canvas");
+  measureCanvas.width = Math.ceil(innerWidthPt * dpr);
+  measureCanvas.height = 1;
+  const mCtx = measureCanvas.getContext("2d");
+  mCtx.font = fontStack;
+
+  const words = String(text).split(/\s+/);
+  const lines = [];
+  let current = "";
+  for (const word of words) {
+    const test = current ? `${current} ${word}` : word;
+    if (mCtx.measureText(test).width > innerWidthPt * dpr && current) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = test;
+    }
+  }
+  if (current) lines.push(current);
+
+  const lineHeightPx = fontPx * 1.4;
+  const canvasW = Math.ceil(innerWidthPt * dpr);
+  const canvasH = Math.ceil(lines.length * lineHeightPx);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = canvasW;
+  canvas.height = Math.max(canvasH, 1);
+  const ctx = canvas.getContext("2d");
+  ctx.font = fontStack;
+  ctx.fillStyle = "#111111";
+  ctx.textBaseline = "top";
+  lines.forEach((line, i) => ctx.fillText(line, 0, i * lineHeightPx));
+
+  return {
+    dataUrl: canvas.toDataURL("image/png"),
+    widthPt: innerWidthPt,
+    heightPt: Math.max(canvasH / dpr, fontSize),
+  };
+};
 
 const formatCellValue = (value, prefix) => {
   if (value === undefined || value === null) {
     return "—";
   }
 
-  const stringValue = stripEmoji(String(value).trim());
+  const stringValue = String(value).trim();
 
   if (stringValue === "") {
     return "—";
@@ -152,19 +201,77 @@ export const downloadSheetPdf = async (sheet) => {
     ? doc.lastAutoTable.finalY + 18
     : currentY;
 
+  // Identify which body-row indices in the end-of-day table are note rows that
+  // contain emoji. Those cells need canvas-based rendering because standard PDF
+  // fonts don't carry emoji glyphs.
+  const emojiNoteRows = new Map(); // bodyRowIndex → raw note text
+  {
+    let bodyIdx = 0;
+    for (const row of endOfDayRows) {
+      bodyIdx++; // primary row
+      if (row.noteField) {
+        const rawNote = safeSheet?.[row.noteField];
+        const noteText = typeof rawNote === "string" ? rawNote : "";
+        if (noteText && containsEmoji(noteText)) {
+          emojiNoteRows.set(bodyIdx, noteText);
+        }
+        bodyIdx++; // note row
+      }
+    }
+  }
+
+  const CELL_PADDING = 6;
+  const FONT_SIZE = 10;
+
   autoTable(doc, {
     head: [["At the end of the day", "Totals"]],
     body: buildSectionRows(endOfDayRows, safeSheet),
     startY: currentY,
     theme: "grid",
     margin: tableMargin,
-    styles: { fontSize: 10, cellPadding: 6 },
+    styles: { fontSize: FONT_SIZE, cellPadding: CELL_PADDING },
     headStyles: {
       fillColor: [226, 232, 240],
       textColor: 32,
       fontStyle: "bold",
     },
     columnStyles: { 1: { halign: "right" } },
+    didParseCell: (data) => {
+      if (
+        data.row.section === "body" &&
+        emojiNoteRows.has(data.row.index) &&
+        data.column.index === 1
+      ) {
+        // Reserve vertical space for the image; suppress default text drawing.
+        data.cell.text = [];
+        data.cell.styles.minCellHeight = 28;
+      }
+    },
+    didDrawCell: (data) => {
+      if (
+        data.row.section === "body" &&
+        emojiNoteRows.has(data.row.index) &&
+        data.column.index === 1
+      ) {
+        const noteText = emojiNoteRows.get(data.row.index);
+        const rendered = renderEmojiText(
+          noteText,
+          data.cell.width,
+          FONT_SIZE,
+          CELL_PADDING,
+        );
+        if (rendered) {
+          doc.addImage(
+            rendered.dataUrl,
+            "PNG",
+            data.cell.x + CELL_PADDING,
+            data.cell.y + CELL_PADDING,
+            rendered.widthPt,
+            rendered.heightPt,
+          );
+        }
+      }
+    },
   });
 
   currentY = doc.lastAutoTable?.finalY
