@@ -1,3 +1,4 @@
+import InfoButton from "./InfoButton.jsx";
 import ThemeToggleButton from "./ThemeToggleButton.jsx";
 
 const baseInputClasses =
@@ -24,7 +25,10 @@ const SheetHeader = ({ sheet, onFieldChange, downloadButton }) => {
             <span className="inline-flex items-center gap-2 rounded-full bg-blue-500/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.32em] text-blue-200">
               Oyster Party
             </span>
-            <ThemeToggleButton className="md:hidden" />
+            <div className="flex items-center gap-1">
+              <InfoButton className="md:hidden" />
+              <ThemeToggleButton className="md:hidden" />
+            </div>
           </div>
           <div className="space-y-2">
             <h1 className="text-3xl font-bold text-slate-100 sm:text-4xl">
@@ -39,6 +43,7 @@ const SheetHeader = ({ sheet, onFieldChange, downloadButton }) => {
 
         <div className="flex w-full flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center md:w-auto md:flex-row md:items-center md:justify-end">
           {downloadButton ?? null}
+          <InfoButton className="hidden md:inline-flex" />
           <ThemeToggleButton className="hidden md:inline-flex" />
         </div>
       </div>
