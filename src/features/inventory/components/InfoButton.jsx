@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Info } from "lucide-react";
+import { ListChecks } from "lucide-react";
 import ChecklistModal from "./ChecklistModal.jsx";
 
 const InfoButton = ({ className = "" }) => {
@@ -14,7 +14,7 @@ const InfoButton = ({ className = "" }) => {
         aria-haspopup="dialog"
         aria-expanded={isOpen}
       >
-        <Info className="h-4 w-4 shrink-0" />
+        <ListChecks className="h-4 w-4 shrink-0" />
       </button>
       {isOpen && <ChecklistModal onClose={() => setIsOpen(false)} />}
     </>
